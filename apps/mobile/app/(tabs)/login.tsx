@@ -2,16 +2,16 @@ import { useRouter } from "expo-router";
 import { MessageCircle } from "lucide-react-native";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth-context";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("test@example.com");
