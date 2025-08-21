@@ -23,13 +23,12 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(currentUser);
   const [isLoading, setIsLoading] = useState(false);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
 
-    // Şuanlık api call yapmıyoruz backend bitince baglıyacagız
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     if (email.trim() && password.trim()) {
@@ -84,6 +83,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     setUser(null);
   };
+
+  console.log("user", user);
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>

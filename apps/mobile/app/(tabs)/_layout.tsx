@@ -1,7 +1,10 @@
 import { Tabs } from 'expo-router';
-import { MessageCircle, Users } from 'lucide-react-native';
+import { LogIn, MessageCircle, UserPlus, Users } from 'lucide-react-native';
+import { useAuth } from '../../context/auth-context';
 
 export default function TabLayout() {
+  const { user } = useAuth();
+
   return (
     <Tabs
       screenOptions={{
@@ -15,6 +18,8 @@ export default function TabLayout() {
           paddingBottom: 8,
           paddingTop: 8,
           height: 84,
+          justifyContent:"center",
+          alignItems:"center",
         },
       }}
     >
@@ -25,6 +30,8 @@ export default function TabLayout() {
           tabBarIcon: ({ size, color }) => (
             <MessageCircle size={size} color={color} />
           ),
+          // Kullanıcı giriş yapmamışsa gizle
+          tabBarButton: user ? undefined : () => null,
         }}
       />
       <Tabs.Screen
@@ -34,6 +41,30 @@ export default function TabLayout() {
           tabBarIcon: ({ size, color }) => (
             <Users size={size} color={color} />
           ),
+          // Kullanıcı giriş yapmamışsa gizle
+          tabBarButton: user ? undefined : () => null,
+        }}
+      />
+      <Tabs.Screen
+        name="login"
+        options={{
+          title: 'Giriş Yap',
+          tabBarIcon: ({ size, color }) => (
+            <LogIn size={size} color={color} />
+          ),
+          // Kullanıcı giriş yapmışsa gizle
+          tabBarButton: !user ? undefined : () => null,
+        }}
+      />
+      <Tabs.Screen
+        name="register"
+        options={{
+          title: 'Kayıt Ol',
+          tabBarIcon: ({ size, color }) => (
+            <UserPlus size={size} color={color} />
+          ),
+          // Kullanıcı giriş yapmışsa gizle
+          tabBarButton: !user ? undefined : () => null,
         }}
       />
     </Tabs>
