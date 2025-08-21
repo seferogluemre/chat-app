@@ -1,75 +1,241 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { LogOut, MessageSquarePlus } from 'lucide-react-native';
+import React, { useState } from 'react';
+import {
+  FlatList,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useAuth } from '../../context/auth-context';
+import { mockRooms } from '../../data/data';
+import { Room } from '../../types/chat';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+export default function ChatsScreen() {
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
 
-export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
+  const handleLogout = () => {
+    logout();
+    router.replace('/login');
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 1000);
+  };
+
+  const getRoomDisplayName = (room: Room) => {
+    if (room.isDM && room.participants && room.participants.length > 0) {
+      const participant = room.participants[0];
+      return `${participant.firstName} ${participant.lastName}`;
+    }
+    return room.name || 'Unnamed Room';
+  };
+
+  const getRoomImage = (room: Room) => {
+    if (room.isDM && room.participants && room.participants.length > 0) {
+      return room.participants[0].profileImage;
+    }
+    return 'https://images.pexels.com/photos/3184293/pexels-photo-3184293.jpeg?auto=compress&cs=tinysrgb&w=150';
+  };
+
+  const formatTime = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    
+    if (hours < 24) {
+      return date.toLocaleTimeString('tr-TR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+    }
+    return date.toLocaleDateString('tr-TR', { 
+      day: '2-digit', 
+      month: '2-digit' 
+    });
+  };
+
+  const isParticipantOnline = (room: Room) => {
+    if (room.isDM && room.participants && room.participants.length > 0) {
+      return room.participants[0].isOnline;
+    }
+    return false;
+  };
+
+  const renderChatItem = ({ item }: { item: Room }) => (
+    <TouchableOpacity
+      style={styles.chatItem}
+      onPress={() => router.push(`/chat/${item.id}`)}
+    >
+      <View style={styles.avatarContainer}>
         <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+          source={{ uri: getRoomImage(item) }}
+          style={styles.avatar}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+        {item.isDM && isParticipantOnline(item) && (
+          <View style={styles.onlineIndicator} />
+        )}
+      </View>
+      
+      <View style={styles.chatInfo}>
+        <View style={styles.chatHeader}>
+          <Text style={styles.chatName}>{getRoomDisplayName(item)}</Text>
+          {item.lastMessage && (
+            <Text style={styles.chatTime}>
+              {formatTime(item.lastMessage.createdAt)}
+            </Text>
+          )}
+        </View>
+        
+        <View style={styles.chatPreview}>
+          <Text style={styles.lastMessage} numberOfLines={1}>
+            {item.lastMessage ? item.lastMessage.content : 'Henüz mesaj yok'}
+          </Text>
+          {item.unreadCount && item.unreadCount > 0 && (
+            <View style={styles.unreadBadge}>
+              <Text style={styles.unreadText}>{item.unreadCount}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Sohbetler</Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.headerButton}>
+            <MessageSquarePlus size={24} color="#007AFF" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton} onPress={handleLogout}>
+            <LogOut size={24} color="#FF3B30" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <FlatList
+        data={mockRooms}
+        keyExtractor={(item) => item.id}
+        renderItem={renderChatItem}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        contentContainerStyle={styles.chatList}
+        showsVerticalScrollIndicator={false}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    backgroundColor: '#F2F2F7',
+  },
+  header: {
+    backgroundColor: 'white',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1D1D1F',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  headerButton: {
+    padding: 4,
+  },
+  chatList: {
+    paddingVertical: 8,
+  },
+  chatItem: {
+    backgroundColor: 'white',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F2F2F7',
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  avatarContainer: {
+    position: 'relative',
+    marginRight: 16,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+  },
+  onlineIndicator: {
     position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#34C759',
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+  chatInfo: {
+    flex: 1,
+  },
+  chatHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  chatName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1D1D1F',
+    flex: 1,
+  },
+  chatTime: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginLeft: 8,
+  },
+  chatPreview: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  lastMessage: {
+    fontSize: 15,
+    color: '#8E8E93',
+    flex: 1,
+  },
+  unreadBadge: {
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    marginLeft: 8,
+  },
+  unreadText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
