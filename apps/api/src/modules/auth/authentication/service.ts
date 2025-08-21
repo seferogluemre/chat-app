@@ -21,9 +21,6 @@ export class AuthService {
   private readonly JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
   private readonly SALT_ROUNDS = 12;
 
-  /**
-   * Kullanıcı kaydı
-   */
   async register(payload: RegisterPayload): Promise<LoginResponse> {
     const { email, firstName, lastName, username, password, bio } = payload;
 
@@ -96,9 +93,6 @@ export class AuthService {
     return await this.createLoginResponse(result, payload.email);
   }
 
-  /**
-   * Kullanıcı girişi
-   */
   async login(
     payload: LoginPayload,
     ipAddress?: string,
@@ -144,9 +138,6 @@ export class AuthService {
     return await this.createLoginResponse(user, email, ipAddress, userAgent);
   }
 
-  /**
-   * Token doğrulama
-   */
   async verifyToken(token: string): Promise<JWTPayload> {
     try {
       const decoded = jwt.verify(token, this.JWT_SECRET) as JWTPayload;
@@ -169,18 +160,12 @@ export class AuthService {
     }
   }
 
-  /**
-   * Logout
-   */
   async logout(sessionId: string): Promise<void> {
     await prisma.session.delete({
       where: { id: sessionId },
     });
   }
 
-  /**
-   * Şifre değiştirme
-   */
   async changePassword(
     userId: string,
     currentPassword: string,
@@ -212,9 +197,6 @@ export class AuthService {
     });
   }
 
-  /**
-   * Kullanıcı session'larını listele
-   */
   async getUserSessions(userId: string): Promise<SessionInfo[]> {
     const sessions = await prisma.session.findMany({
       where: {
@@ -227,16 +209,13 @@ export class AuthService {
     return sessions.map((session) => ({
       id: session.id,
       token: session.token.substring(0, 10) + "...", // Güvenlik için kısalt
-      ipAddress: session.ipAddress,
-      userAgent: session.userAgent,
+      ipAddress: session.ipAddress || undefined,
+      userAgent: session.userAgent || undefined,
       expiresAt: session.expiresAt,
       createdAt: session.createdAt,
     }));
   }
 
-  /**
-   * Session sonlandır
-   */
   async revokeSession(userId: string, sessionId: string): Promise<void> {
     await prisma.session.deleteMany({
       where: {
@@ -246,9 +225,6 @@ export class AuthService {
     });
   }
 
-  /**
-   * Tüm session'ları sonlandır (logout from all devices)
-   */
   async revokeAllSessions(
     userId: string,
     exceptSessionId?: string
@@ -261,9 +237,6 @@ export class AuthService {
     });
   }
 
-  /**
-   * Login response oluşturma helper'ı
-   */
   private async createLoginResponse(
     user: any,
     email: string,
@@ -310,6 +283,94 @@ export class AuthService {
       token,
       expiresAt,
     };
+  }
+
+  async getUserProfile(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        fullName: true,
+        username: true,
+        profileImage: true,
+        bio: true,
+        emailVerified: true,
+        isActive: true,
+        createdAt: true,
+        userRoles: {
+          include: {
+            role: {
+              select: {
+                name: true,
+                slug: true,
+                permissions: true,
+                isGlobal: true,
+              },
+            },
+            room: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundError("Kullanıcı bulunamadı");
+    }
+
+    return user;
+  }
+
+  async updateUserProfile(
+    userId: string,
+    updateData: {
+      firstName?: string;
+      lastName?: string;
+      bio?: string;
+      profileImage?: string;
+    }
+  ) {
+    let finalUpdateData = { ...updateData };
+
+    if (updateData.firstName || updateData.lastName) {
+      const currentUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { firstName: true, lastName: true },
+      });
+
+      if (currentUser) {
+        const firstName = updateData.firstName || currentUser.firstName;
+        const lastName = updateData.lastName || currentUser.lastName;
+        finalUpdateData.fullName = `${firstName} ${lastName}`;
+      }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: finalUpdateData,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        fullName: true,
+        username: true,
+        profileImage: true,
+        bio: true,
+        emailVerified: true,
+        isActive: true,
+        updatedAt: true,
+      },
+    });
+
+    return updatedUser;
   }
 }
 
