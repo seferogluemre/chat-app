@@ -9,7 +9,6 @@ in the IDE when importing
 const BadRequestException = createError.BadRequest;
 const UnauthorizedException = createError.Unauthorized;
 const PaymentRequiredException = createError.PaymentRequired;
-const ForbiddenException = createError.Forbidden;
 const NotFoundException = createError.NotFound;
 const MethodNotAllowedException = createError.MethodNotAllowed;
 const NotAcceptableException = createError.NotAcceptable;
@@ -46,11 +45,13 @@ const InsufficientStorageException = createError.InsufficientStorage;
 const LoopDetectedException = createError.LoopDetected;
 const BandwidthLimitExceededException = createError.BandwidthLimitExceeded;
 const NotExtendedException = createError.NotExtended;
+const ForbiddenError = createError.Forbidden;
+const UnauthorizedError = createError.Unauthorized;
 const NetworkAuthenticationRequireException = createError.NetworkAuthenticationRequire;
 
 
 export {
-    BadGatewayException, BadRequestException, BandwidthLimitExceededException, ConflictException, ExpectationFailedException, FailedDependencyException, ForbiddenException, GatewayTimeoutException, GoneException, HTTPVersionNotSupportedException, ImATeapotException, InsufficientStorageException, InternalServerErrorException, LengthRequiredException, LockedException, LoopDetectedException, MethodNotAllowedException, MisdirectedRequestException, NetworkAuthenticationRequireException, NotAcceptableException, NotExtendedException, NotFoundException, NotImplementedException, PayloadTooLargeException, PaymentRequiredException, PreconditionFailedException, PreconditionRequiredException, ProxyAuthenticationRequiredException, RangeNotSatisfiableException, RequestHeaderFieldsTooLargeException, RequestTimeoutException, ServiceUnavailableException, TooEarlyException, TooManyRequestsException, UnauthorizedException, UnavailableForLegalReasonsException, UnprocessableEntityException, UnsupportedMediaTypeException, UpgradeRequiredException, URITooLongException, VariantAlsoNegotiatesException
+    BadGatewayException, BadRequestException, BandwidthLimitExceededException, ConflictException, ExpectationFailedException, FailedDependencyException, ForbiddenError, GatewayTimeoutException, GoneException, HTTPVersionNotSupportedException, ImATeapotException, InsufficientStorageException, InternalServerErrorException, LengthRequiredException, LockedException, LoopDetectedException, MethodNotAllowedException, MisdirectedRequestException, NetworkAuthenticationRequireException, NotAcceptableException, NotExtendedException, NotFoundException, NotImplementedException, PayloadTooLargeException, PaymentRequiredException, PreconditionFailedException, PreconditionRequiredException, ProxyAuthenticationRequiredException, RangeNotSatisfiableException, RequestHeaderFieldsTooLargeException, RequestTimeoutException, ServiceUnavailableException, TooEarlyException, TooManyRequestsException, UnauthorizedError, UnauthorizedException, UnavailableForLegalReasonsException, UnprocessableEntityException, UnsupportedMediaTypeException, UpgradeRequiredException, URITooLongException, VariantAlsoNegotiatesException
 };
 
 // @ts-ignore

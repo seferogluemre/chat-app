@@ -7,57 +7,186 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum EnumUserRole {
+  ADMIN
+  USER
+}
+
 model User {
   id        String @id @default(uuid())
   email     String @unique @db.VarChar(255)
   firstName String @map("first_name") @db.VarChar(50)
   lastName  String @map("last_name") @db.VarChar(50)
+  fullName  String @map("full_name") @db.VarChar(101)
   username  String @unique @db.VarChar(50)
+
   profileImage String? @map("profile_image") @db.VarChar(255)
-  bio       String? @db.VarChar(255)
+  bio          String? @db.VarChar(255)
 
   passwordHash String @map("password_hash") @db.VarChar(255)
-  createdAt    DateTime     @default(now()) @map("created_at")
+
+  // Status fields
+  isActive      Boolean @default(true) @map("is_active")
+  emailVerified Boolean @default(false) @map("email_verified")
+
+  // Ban system
+  isBanned     Boolean?  @default(false) @map("is_banned")
+  banReason    String?   @map("ban_reason") @db.VarChar(500)
+  banExpiresAt DateTime? @map("ban_expires_at")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relations
   messages     Message[]
   memberships  Membership[]
+  userRoles    UserRole[]
+  sessions     Session[]
+  createdRooms Room[]       @relation("RoomCreator")
 
+  @@index([deletedAt])
   @@map("users")
 }
 
+model Role {
+  id          Int     @id @default(autoincrement())
+  uuid        String  @unique @default(uuid())
+  name        String  @unique @db.VarChar(50)
+  slug        String  @unique @db.VarChar(50)
+  description String? @db.VarChar(255)
+
+  // JSON array of permissions
+  permissions Json @default("[]") @db.JsonB
+
+  // Chat specific role types
+  isGlobal Boolean @default(false) @map("is_global")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  userRoles UserRole[]
+
+  @@index([deletedAt])
+  @@map("roles")
+}
+
+model UserRole {
+  id     Int    @id @default(autoincrement())
+  userId String @map("user_id")
+  roleId Int    @map("role_id")
+
+  // Room specific role assignment (null = global role)
+  roomId String? @map("room_id")
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  room Room? @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, roleId, roomId])
+  @@index([userId])
+  @@index([roleId])
+  @@index([roomId])
+  @@map("user_roles")
+}
+
+model Session {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+  token  String @unique @db.VarChar(500)
+
+  ipAddress String? @map("ip_address") @db.VarChar(45)
+  userAgent String? @map("user_agent") @db.VarChar(500)
+
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
 model Room {
-  id          String       @id @default(uuid()) @db.VarChar(36)
-  name        String? @map("name") @db.VarChar(100)
-  isDM        Boolean      @default(false) @map("is_dm")
-  createdAt   DateTime     @default(now()) @map("created_at")
+  id          String  @id @default(uuid()) @db.VarChar(36)
+  name        String? @db.VarChar(100)
+  description String? @db.VarChar(500)
+
+  isDM       Boolean @default(false) @map("is_dm")
+  isPrivate  Boolean @default(false) @map("is_private")
+  isArchived Boolean @default(false) @map("is_archived")
+
+  // Room settings
+  maxMembers Int?    @map("max_members")
+  roomImage  String? @map("room_image") @db.VarChar(255)
+
+  // Creator info
+  createdById String @map("created_by_id")
+  createdBy   User   @relation("RoomCreator", fields: [createdById], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
   messages    Message[]
   memberships Membership[]
+  userRoles   UserRole[]
 
+  @@index([deletedAt])
+  @@index([createdById])
   @@map("rooms")
 }
 
 model Membership {
-  userId   String @map("user_id")
-  roomId   String @map("room_id")
-  joinedAt DateTime @default(now()) @map("joined_at")
+  userId   String    @map("user_id")
+  roomId   String    @map("room_id")
+  joinedAt DateTime  @default(now()) @map("joined_at")
+  leftAt   DateTime? @map("left_at")
 
-  user User @relation(fields: [userId], references: [id])
-  room Room @relation(fields: [roomId], references: [id])
+  // Membership status
+  isActive Boolean @default(true) @map("is_active")
+  isMuted  Boolean @default(false) @map("is_muted")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   @@id([userId, roomId])
+  @@index([roomId])
+  @@index([userId])
   @@map("memberships")
 }
 
 model Message {
-  id        String   @id @default(uuid()) @db.VarChar(36)
-  roomId    String @map("room_id")
-  senderId  String  @map("sender_id")
-  content   String  @db.Text  @map("content")
-  createdAt DateTime @default(now()) @map("created_at")
+  id       String @id @default(uuid()) @db.VarChar(36)
+  roomId   String @map("room_id")
+  senderId String @map("sender_id")
+  content  String @db.Text
 
-  room   Room @relation(fields: [roomId], references: [id])
-  sender User @relation(fields: [senderId], references: [id])
+  // Message features
+  isEdited  Boolean @default(false) @map("is_edited")
+  isPinned  Boolean @default(false) @map("is_pinned")
+  isDeleted Boolean @default(false) @map("is_deleted")
+
+  // Reply system
+  replyToId String?   @map("reply_to_id") @db.VarChar(36)
+  replyTo   Message?  @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies   Message[] @relation("MessageReplies")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  room   Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender User @relation(fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([roomId, createdAt])
-
+  @@index([senderId])
+  @@index([replyToId])
+  @@index([deletedAt])
   @@map("messages")
 }
