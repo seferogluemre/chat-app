@@ -1,26 +1,14 @@
 import { NextFunction, Request, Response } from 'express';
 import { BadRequestError } from '../../../utils/http-errors';
 import { AuthenticatedRequest } from '../permissions/middleware';
-import {
-  changePasswordDto,
-  loginDto,
-  registerDto,
-  updateProfileDto,
-  validateDto
-} from './dtos';
+import { changePasswordSchema, loginSchema, registerSchema, updateProfileSchema, validateSchema } from './dtos';
 import { authService } from './service';
 
 export class AuthController {
-  /**
-   * POST /auth/register
-   * Kullanıcı kaydı
-   */
   async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // Validation
-      const validatedData = validateDto(registerDto, req.body);
+      const validatedData = validateSchema(registerSchema, req.body);
       
-      // Service çağrısı
       const result = await authService.register(validatedData);
       
       res.status(201).json({
@@ -33,20 +21,13 @@ export class AuthController {
     }
   }
 
-  /**
-   * POST /auth/login
-   * Kullanıcı girişi
-   */
   async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // Validation
-      const validatedData = validateDto(loginDto, req.body);
+      const validatedData = validateSchema(loginSchema, req.body);
       
-      // IP ve User Agent bilgilerini al
       const ipAddress = req.ip || req.connection.remoteAddress;
       const userAgent = req.get('User-Agent');
       
-      // Service çağrısı
       const result = await authService.login(validatedData, ipAddress, userAgent);
       
       res.json({
@@ -59,13 +40,8 @@ export class AuthController {
     }
   }
 
-  /**
-   * POST /auth/logout
-   * Kullanıcı çıkışı
-   */
   async logout(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      // JWT'den session ID'yi al
       const sessionId = req.body.sessionId || req.headers['x-session-id'];
       
       if (!sessionId) {
@@ -83,10 +59,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * GET /auth/me
-   * Kullanıcı profil bilgileri
-   */
   async getProfile(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const user = await authService.getUserProfile(req.user.id);
@@ -100,14 +72,9 @@ export class AuthController {
     }
   }
 
-  /**
-   * PUT /auth/profile
-   * Profil güncelleme
-   */
   async updateProfile(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      // Validation
-      const validatedData = validateDto(updateProfileDto, req.body);
+      const validatedData = validateSchema(updateProfileSchema, req.body);
       
       const updatedUser = await authService.updateUserProfile(req.user.id, validatedData);
       
@@ -121,14 +88,9 @@ export class AuthController {
     }
   }
 
-  /**
-   * POST /auth/change-password
-   * Şifre değiştirme
-   */
   async changePassword(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      // Validation
-      const validatedData = validateDto(changePasswordDto, req.body);
+      const validatedData = validateSchema(changePasswordSchema, req.body);
       
       await authService.changePassword(
         req.user.id, 
@@ -145,10 +107,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * GET /auth/sessions
-   * Kullanıcının aktif session'larını listele
-   */
   async getSessions(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const sessions = await authService.getUserSessions(req.user.id);
@@ -162,10 +120,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * DELETE /auth/sessions/:sessionId
-   * Belirli bir session'ı sonlandır
-   */
   async revokeSession(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const { sessionId } = req.params;
@@ -181,10 +135,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * DELETE /auth/sessions
-   * Tüm session'ları sonlandır (logout from all devices)
-   */
   async revokeAllSessions(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const currentSessionId = req.body.currentSessionId;
@@ -200,10 +150,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * GET /auth/verify
-   * Token doğrulama endpoint'i
-   */
   async verifyToken(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const authHeader = req.headers.authorization;
@@ -225,5 +171,4 @@ export class AuthController {
   }
 }
 
-// Singleton instance
 export const authController = new AuthController();

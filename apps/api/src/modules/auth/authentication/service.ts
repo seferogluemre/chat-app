@@ -333,6 +333,7 @@ export class AuthService {
     updateData: {
       firstName?: string;
       lastName?: string;
+      fullName?:string,
       bio?: string;
       profileImage?: string;
     }

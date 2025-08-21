@@ -5,16 +5,11 @@ import jwt from "jsonwebtoken";
 import { userHasPermission } from "./helpers";
 import { PermissionIdentifier, UserWithPermissions } from "./types";
 
-// Request'i extend et - user bilgisini ekle
 export interface AuthenticatedRequest extends Request {
   user: UserWithPermissions;
   roomId?: string;
 }
 
-/**
- * JWT Authentication Middleware
- * Token'ı kontrol eder ve user'ı request'e ekler
- */
 export const authenticate = async (
   req: AuthenticatedRequest,
   res: Response,
@@ -58,7 +53,6 @@ export const authenticate = async (
       throw new UnauthorizedError("Geçersiz token");
     }
 
-    // Banned user kontrolü
     if (
       user.isBanned &&
       (!user.banExpiresAt || user.banExpiresAt > new Date())
@@ -66,7 +60,6 @@ export const authenticate = async (
       throw new ForbiddenError("Hesabınız yasaklanmış");
     }
 
-    // User'ı request'e ekle
     req.user = user as UserWithPermissions;
     next();
   } catch (error) {
