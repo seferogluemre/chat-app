@@ -38,7 +38,6 @@ function RootNavigator() {
 
 export default function RootLayout() {
   useFrameworkReady();
-
   return (
     <AuthProvider>
       <RootNavigator />
