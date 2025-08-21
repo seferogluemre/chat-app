@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import express, { Router } from "express";
 import helmet from "helmet";
 import { createServer } from "http";
-import morgan from 'morgan';
+import morgan from "morgan";
 import { authRoutes } from "./modules/auth";
 
 const corsOptions = {
@@ -22,7 +22,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 const httpServer = createServer(app);
 
-const router=Router();
+const api = Router();
 
 app.use(errorHandler);
 app.use(
@@ -32,34 +32,24 @@ app.use(
 );
 
 // Logging
-app.use(morgan('combined'))
+app.use(morgan("combined"));
 
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+app.get("/health", (req, res) => {
+  res.json({
+    status: "OK",
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
   });
 });
 
-router.use('/api', authRoutes);
+api.use("/auth", authRoutes);
 
-app.use(router);
+app.use("/api", api);
 
 httpServer.listen(port, () => {
   console.log(`Express Sunucusu ${port} portunda çalışıyor...`);
-});
-
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully');
-  process.exit(0);
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully');
-  process.exit(0);
 });

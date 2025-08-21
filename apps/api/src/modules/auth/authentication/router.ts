@@ -4,19 +4,19 @@ import { authController } from './controller';
 
 const router = Router();
 
-router.post('/register', authController.register);
-router.post('/login', authController.login);
-router.get('/verify', authController.verifyToken);
+router.post('/register', authController.register.bind(authController));
+router.post('/login', authController.login.bind(authController));
+router.get('/verify', authController.verifyToken.bind(authController));
 
 router.use(authenticate); 
 
-router.post('/logout', authController.logout);
-router.get('/me', authController.getProfile);
-router.put('/profile', authController.updateProfile);
-router.post('/change-password', authController.changePassword);
-router.get('/sessions', authController.getSessions);
-router.delete('/sessions/:sessionId', authController.revokeSession);
-router.delete('/sessions', authController.revokeAllSessions);
+router.post('/logout', authController.logout.bind(authController));
+router.get('/me', authController.getProfile.bind(authController));
+router.put('/profile', authController.updateProfile.bind(authController));
+router.post('/change-password', authController.changePassword.bind(authController));
+router.get('/sessions', authController.getSessions.bind(authController));
+router.delete('/sessions/:sessionId', authController.revokeSession.bind(authController));
+router.delete('/sessions', authController.revokeAllSessions.bind(authController));
 
 export { router as authRoutes };
 
