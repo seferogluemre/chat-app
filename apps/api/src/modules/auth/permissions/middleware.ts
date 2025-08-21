@@ -221,12 +221,10 @@ export const requireSelfOrAdmin = (userIdParam: string = "userId") => {
     try {
       const targetUserId = req.params[userIdParam] as string;
 
-      // Kendi bilgileri mi?
       if (req.user.id === targetUserId) {
         return next();
       }
 
-      // Admin yetkisi var mı?
       const hasAdminPermission = await userHasPermission(
         req.user,
         "admin:user-management"

@@ -19,3 +19,4 @@ router.delete('/sessions/:sessionId', authController.revokeSession);
 router.delete('/sessions', authController.revokeAllSessions);
 
 export { router as authRoutes };
+
