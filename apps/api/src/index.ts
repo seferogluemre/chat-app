@@ -6,8 +6,10 @@ import helmet from "helmet";
 import { createServer } from "http";
 import morgan from "morgan";
 import { authRoutes } from "./modules/auth";
+import { membershipRoutes } from "./modules/memberships";
 import { messageRoutes } from "./modules/messages";
 import { roomRoutes } from "./modules/room";
+import { initializeSocket } from "./modules/socket/service";
 import { userRoutes } from "./modules/user";
 
 const corsOptions = {
@@ -51,11 +53,17 @@ api.use("/auth", authRoutes);
 api.use("/rooms", roomRoutes);
 api.use("/users", userRoutes);
 api.use("/messages", messageRoutes);
+app.use('/memberships', membershipRoutes);
 
 app.use("/api", api);
 
 app.use(errorMiddleware);
 
+initializeSocket(httpServer)
+
 httpServer.listen(port, () => {
-  console.log(`Express Sunucusu ${port} portunda çalışıyor...`);
+  console.log(`🚀 Server running on port ${port}`);
+  console.log(`📱 Environment: ${process.env.NODE_ENV}`);
+  console.log(`🔗 Health check: http://localhost:${port}/health`);
+  console.log(`📡 Socket.io ready`);
 });
