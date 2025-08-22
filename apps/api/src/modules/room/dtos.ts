@@ -85,7 +85,7 @@ export const roomSearchSchema = z.object({
     .min(1, "Arama terimi en az 1 karakter olmalıdır")
     .max(100, "Arama terimi en fazla 100 karakter olabilir")
     .trim()
-    .optional(),
+    .optional(),  
 
   isPrivate: z
     .enum(["true", "false"])

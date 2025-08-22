@@ -267,6 +267,9 @@ export class RoomService {
     return await this.getRoomById(room.id, userId);
   }
 
+  /**
+   * DM odası oluştur - BASİT VERSİYON
+   */
   async createDMRoom(
     userId: string,
     payload: CreateDMPayload
@@ -277,21 +280,34 @@ export class RoomService {
       throw new BadRequestError("Kendinizle DM oluşturamazsınız");
     }
 
-    // Var olan DM kontrolü
-    const existingDM = await prisma.room.findFirst({
+    // Tüm DM odalarını al ve kontrol et
+    const userDMRooms = await prisma.room.findMany({
       where: {
         isDM: true,
         deletedAt: null,
         memberships: {
-          every: {
-            userId: { in: [userId, participantId] },
+          some: {
+            userId: userId,
             isActive: true,
           },
         },
-        _count: {
-          memberships: { equals: 2 },
+      },
+      include: {
+        memberships: {
+          where: { isActive: true },
+          select: { userId: true },
         },
       },
+    });
+
+    // İki kullanıcı arasında var olan DM var mı kontrol et
+    const existingDM = userDMRooms.find((room) => {
+      const memberIds = room.memberships.map((m) => m.userId);
+      return (
+        memberIds.length === 2 &&
+        memberIds.includes(userId) &&
+        memberIds.includes(participantId)
+      );
     });
 
     if (existingDM) {
