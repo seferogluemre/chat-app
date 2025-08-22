@@ -126,10 +126,6 @@ export const requirePermission = (
   };
 };
 
-/**
- * Room Member Check Middleware
- * User'ın belirtilen room'un üyesi olup olmadığını kontrol eder
- */
 export const requireRoomMembership = (roomIdParam: string = 'roomId') => {
   return async (
     req: AuthenticatedRequest, 
@@ -143,7 +139,6 @@ export const requireRoomMembership = (roomIdParam: string = 'roomId') => {
         throw new ForbiddenError('Room ID gerekli');
       }
 
-      // User'ın room üyeliğini kontrol et
       const membership = await prisma.membership.findUnique({
         where: {
           userId_roomId: {
@@ -165,16 +160,8 @@ export const requireRoomMembership = (roomIdParam: string = 'roomId') => {
   };
 };
 
-/**
- * Admin Only Middleware
- * Sadece admin'lerin erişebileceği endpoint'ler için
- */
 export const requireAdmin = requirePermission('admin:panel-access');
 
-/**
- * Room Owner Check Middleware
- * Room'un sahibi olup olmadığını kontrol eder
- */
 export const requireRoomOwnership = (roomIdParam: string = 'roomId') => {
   return async (
     req: AuthenticatedRequest, 

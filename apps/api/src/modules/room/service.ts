@@ -1,14 +1,14 @@
 import prisma from '@/core/prisma';
 import { BadRequestError, ForbiddenError, NotFoundError } from '@/utils/http-errors';
 import {
-    CreateDMPayload,
-    CreateRoomPayload,
-    PaginatedRooms,
-    RoomListItem,
-    RoomMember,
-    RoomSearchFilters,
-    RoomWithDetails,
-    UpdateRoomPayload
+  CreateDMPayload,
+  CreateRoomPayload,
+  PaginatedRooms,
+  RoomListItem,
+  RoomMember,
+  RoomSearchFilters,
+  RoomWithDetails,
+  UpdateRoomPayload
 } from './types';
 
 export class RoomService {
