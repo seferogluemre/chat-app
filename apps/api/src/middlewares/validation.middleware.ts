@@ -36,9 +36,9 @@ export const validateBody = <T>(schema: z.ZodSchema<T>) => {
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const validationErrors = error.issues.map(issue => ({
-          field: issue.path.join('.') || 'root',
-          message: issue.message
+        const validationErrors = error.issues.map((issue) => ({
+          field: issue.path.join(".") || "root",
+          message: issue.message,
         }));
 
         const response: ValidationErrorResponse = {
@@ -46,7 +46,7 @@ export const validateBody = <T>(schema: z.ZodSchema<T>) => {
           status: "validation_failed",
           message: "Gönderilen veriler geçersiz",
           errors: validationErrors,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         };
 
         return res.status(400).json(response);
@@ -60,13 +60,15 @@ export const validateQuery = <T>(schema: z.ZodSchema<T>) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
       const validatedData = schema.parse(req.query);
-      req.query = validatedData as any;
+      // req.query = validatedData as any; // BU SATIRI KALDIR!
+      // Validate edilmiş veriyi req'e özel bir property olarak ekle
+      (req as any).validatedQuery = validatedData;
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const validationErrors = error.issues.map(issue => ({
-          field: issue.path.join('.') || 'root',
-          message: issue.message
+        const validationErrors = error.issues.map((issue) => ({
+          field: issue.path.join(".") || "root",
+          message: issue.message,
         }));
 
         const response: ValidationErrorResponse = {
@@ -74,7 +76,7 @@ export const validateQuery = <T>(schema: z.ZodSchema<T>) => {
           status: "validation_failed",
           message: "Query parametreleri geçersiz",
           errors: validationErrors,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         };
 
         return res.status(400).json(response);
@@ -84,17 +86,19 @@ export const validateQuery = <T>(schema: z.ZodSchema<T>) => {
   };
 };
 
+// Params validation middleware - DÜZELTME
 export const validateParams = <T>(schema: z.ZodSchema<T>) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
       const validatedData = schema.parse(req.params);
-      req.params = validatedData as any;
+      // req.params = validatedData as any; // BU SATIRI KALDIR!
+      (req as any).validatedParams = validatedData;
       next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        const validationErrors = error.issues.map(issue => ({
-          field: issue.path.join('.') || 'root',
-          message: issue.message
+        const validationErrors = error.issues.map((issue) => ({
+          field: issue.path.join(".") || "root",
+          message: issue.message,
         }));
 
         const response: ValidationErrorResponse = {
@@ -102,7 +106,7 @@ export const validateParams = <T>(schema: z.ZodSchema<T>) => {
           status: "validation_failed",
           message: "URL parametreleri geçersiz",
           errors: validationErrors,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         };
 
         return res.status(400).json(response);
@@ -113,9 +117,9 @@ export const validateParams = <T>(schema: z.ZodSchema<T>) => {
 };
 
 export const sendSuccessResponse = <T>(
-  res: Response, 
-  data?: T, 
-  message?: string, 
+  res: Response,
+  data?: T,
+  message?: string,
   statusCode: number = 200
 ) => {
   const response: SuccessResponse<T> = {
@@ -123,9 +127,9 @@ export const sendSuccessResponse = <T>(
     status: "success",
     message,
     data,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
-  
+
   return res.status(statusCode).json(response);
 };
 
@@ -141,9 +145,9 @@ export const sendErrorResponse = (
     status,
     message,
     error,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
-  
+
   return res.status(statusCode).json(response);
 };
 

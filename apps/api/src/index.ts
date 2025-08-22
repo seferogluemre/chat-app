@@ -6,6 +6,7 @@ import helmet from "helmet";
 import { createServer } from "http";
 import morgan from "morgan";
 import { authRoutes } from "./modules/auth";
+import { messageRoutes } from "./modules/messages";
 import { roomRoutes } from "./modules/room";
 import { userRoutes } from "./modules/user";
 
@@ -49,6 +50,7 @@ app.get("/health", (req, res) => {
 api.use("/auth", authRoutes);
 api.use("/rooms", roomRoutes);
 api.use("/users", userRoutes);
+api.use("/messages", messageRoutes);
 
 app.use("/api", api);
 
