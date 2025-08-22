@@ -11,7 +11,8 @@ export class MessageController {
   ): Promise<void> {
     try {
       const { roomId } = req.params;
-      const filters = { ...req.query, roomId };
+      const queryParams = req.validatedQuery || req.query;
+      const filters = { queryParams, roomId };
       const result = await messageService.getRoomMessages(filters, req.user.id);
       sendSuccessResponse(res, result, "Mesajlar başarıyla getirildi");
     } catch (error) {

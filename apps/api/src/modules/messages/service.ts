@@ -1,5 +1,5 @@
 import prisma from '@/core/prisma';
-import { BadRequestError, ForbiddenError, NotFoundError } from '../../utils/http-errors';
+import { BadRequestError, ForbiddenError, NotFoundError } from '@/utils/http-errors';
 import {
   MessageFilters,
   MessageListItem,
@@ -288,7 +288,6 @@ export class MessageService {
       throw new NotFoundError('Mesaj bulunamadı');
     }
 
-    // Room üyeliğini kontrol et
     await this.checkRoomMembership(userId, message.roomId);
 
     const canPin = await this.hasMessagePinPermission(userId, message.roomId);

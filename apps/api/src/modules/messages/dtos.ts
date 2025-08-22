@@ -29,7 +29,6 @@ export const sendMessageSchema = z.object({
     .optional()
 });
 
-// Update message DTO
 export const updateMessageSchema = z.object({
   content: z
     .string({ message: 'Mesaj içeriği gereklidir' })
@@ -38,14 +37,12 @@ export const updateMessageSchema = z.object({
     .trim()
 });
 
-// Message params DTO
 export const messageParamsSchema = z.object({
   messageId: z
     .string({ message: 'Message ID gereklidir' })
     .uuid('Geçerli message ID giriniz')
 });
 
-// Room messages query DTO
 export const roomMessagesSchema = z.object({
   roomId: z
     .string({ message: 'Room ID gereklidir' })
@@ -102,14 +99,12 @@ export const roomMessagesSchema = z.object({
     .default('50')
 });
 
-// Pin message DTO
 export const pinMessageSchema = z.object({
   pinned: z
     .boolean()
     .default(true)
 });
 
-// Reaction DTO
 export const reactionSchema = z.object({
   emoji: z
     .string({ message: 'Emoji gereklidir' })
