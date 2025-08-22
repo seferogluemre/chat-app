@@ -7,6 +7,7 @@ import { createServer } from "http";
 import morgan from "morgan";
 import { authRoutes } from "./modules/auth";
 import { roomRoutes } from "./modules/room";
+import { userRoutes } from "./modules/user";
 
 const corsOptions = {
   origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -47,6 +48,7 @@ app.get("/health", (req, res) => {
 
 api.use("/auth", authRoutes);
 api.use("/rooms", roomRoutes);
+api.use("/users", userRoutes);
 
 app.use("/api", api);
 
