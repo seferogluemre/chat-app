@@ -1,98 +1,106 @@
-import { ApiError } from "@/types/api.types";
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, Response } from 'express';
+import { ZodError } from 'zod';
+import { sendErrorResponse } from './validation.middleware';
+
+export interface CustomError extends Error {
+  statusCode?: number;
+  code?: string;
+}
 
 export class AppError extends Error {
-  constructor(public statusCode: number, public error: ApiError) {
-    super(error.message);
-    this.name = "AppError";
+  public statusCode: number;
+  public status: string;
+  public isOperational: boolean;
+
+  constructor(statusCode: number, message: string, status?: string) {
+    super(message);
+    this.statusCode = statusCode;
+    this.status = status || (statusCode >= 400 && statusCode < 500 ? 'client_error' : 'server_error');
+    this.isOperational = true;
+
+    Error.captureStackTrace(this, this.constructor);
   }
 }
 
-interface PrismaError extends Error {
-  code?: string;
-  meta?: {
-    target?: string[];
-    field_name?: string;
-  };
-  clientVersion?: string;
+// Specific error classes
+export class BadRequestError extends AppError {
+  constructor(message: string = 'Geçersiz istek') {
+    super(400, message, 'bad_request');
+  }
 }
 
-export const errorHandler = (
-  err: Error,
+export class UnauthorizedError extends AppError {
+  constructor(message: string = 'Yetkisiz erişim') {
+    super(401, message, 'unauthorized');
+  }
+}
+
+export class ForbiddenError extends AppError {
+  constructor(message: string = 'Erişim yasak') {
+    super(403, message, 'forbidden');
+  }
+}
+
+export class NotFoundError extends AppError {
+  constructor(message: string = 'Kaynak bulunamadı') {
+    super(404, message, 'not_found');
+  }
+}
+
+export const errorMiddleware = (
+  error: CustomError | ZodError | Error,
   req: Request,
   res: Response,
   next: NextFunction
 ): void => {
-  console.error("Error caught in middleware:", err);
+  let statusCode = 500;
+  let message = 'Sunucu hatası';
+  let status = 'server_error';
+  let errorDetail: string | undefined;
 
-  const prismaError = err as PrismaError;
-
-  if (prismaError.code) {
-    switch (prismaError.code) {
-      case "P2002": // Unique constraint failed
-        const field = prismaError.meta?.target?.[0] || "field";
-        res.status(409).json({
-          message: `A record with this ${field} already exists.`,
-          code: prismaError.code,
-          meta: prismaError.meta,
-        });
-        return;
-
-      case "P2003":
-        res.status(409).json({
-          message: "This operation references a record that doesn't exist.",
-          code: prismaError.code,
-          meta: prismaError.meta,
-        });
-        return;
-
-      case "P2025": // Record not found
-        res.status(404).json({
-          message: "The requested record was not found.",
-          code: prismaError.code,
-          meta: prismaError.meta,
-        });
-        return;
-
-      case "P2000":
-        res.status(400).json({
-          message: "One of the input values is too long.",
-          code: prismaError.code,
-          meta: prismaError.meta,
-        });
-        return;
-
-      default:
-        res.status(500).json({
-          message: "Database operation failed.",
-          code: prismaError.code,
-          meta: prismaError.meta,
-        });
-        return;
-    }
-  }
-
-  // JWT hatalarını kontrol et
-  if (err.name === "JsonWebTokenError") {
-    res.status(401).json({
-      message: "Invalid token",
-      error: err.message,
+  if (error instanceof ZodError) {
+    statusCode = 400;
+    message = 'Validation hatası';
+    status = 'validation_failed';
+    const validationErrors = error.issues.map(issue => ({
+      field: issue.path.join('.') || 'root',
+      message: issue.message
+    }));
+    
+    return res.status(400).json({
+      success: false,
+      status: 'validation_failed',
+      message: 'Gönderilen veriler geçersiz',
+      errors: validationErrors,
+      timestamp: new Date().toISOString()
     });
-    return;
+  }
+  else if (error instanceof AppError) {
+    statusCode = error.statusCode;
+    message = error.message;
+    status = error.status;
+  }
+  else if (error.name === 'PrismaClientKnownRequestError') {
+    statusCode = 400;
+    message = 'Veritabanı hatası';
+    status = 'database_error';
+  }
+  else if (error.name === 'JsonWebTokenError') {
+    statusCode = 401;
+    message = 'Geçersiz token';
+    status = 'invalid_token';
+  }
+  else if (process.env.NODE_ENV === 'development') {
+    errorDetail = error.stack;
   }
 
-  if (err.name === "TokenExpiredError") {
-    res.status(401).json({
-      message: "Token expired",
-      error: err.message,
-    });
-    return;
-  }
-
-  const statusCode = res.statusCode !== 200 ? res.statusCode : 500;
-
-  res.status(statusCode).json({
-    message: err.message || "Internal Server Error",
-    error: process.env.NODE_ENV === "production" ? null : err.stack,
+  console.error('Error:', {
+    message: error.message,
+    stack: error.stack,
+    url: req.url,
+    method: req.method,
+    timestamp: new Date().toISOString()
   });
+
+  sendErrorResponse(res, message, statusCode, status, errorDetail);
 };

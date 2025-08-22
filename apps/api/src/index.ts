@@ -1,4 +1,4 @@
-import { errorHandler } from "@/middlewares/error.middleware";
+import { errorMiddleware } from "@/middlewares/error.middleware";
 import cors from "cors";
 import dotenv from "dotenv";
 import express, { Router } from "express";
@@ -24,14 +24,13 @@ const httpServer = createServer(app);
 
 const api = Router();
 
-app.use(errorHandler);
+app.use(errorMiddleware);
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
   })
 );
 
-// Logging
 app.use(morgan("combined"));
 
 app.use(cors(corsOptions));

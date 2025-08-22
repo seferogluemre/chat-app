@@ -1,7 +1,7 @@
 import {
-    BadRequestError,
-    NotFoundError,
-    UnauthorizedError,
+  BadRequestError,
+  NotFoundError,
+  UnauthorizedError,
 } from "@/utils/http-errors";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
@@ -9,11 +9,11 @@ import jwt from "jsonwebtoken";
 import prisma from "../../../core/prisma";
 import { DEFAULT_ROLE_PERMISSIONS } from "../permissions/constants";
 import {
-    JWTPayload,
-    LoginPayload,
-    LoginResponse,
-    RegisterPayload,
-    SessionInfo,
+  JWTPayload,
+  LoginPayload,
+  LoginResponse,
+  RegisterPayload,
+  SessionInfo,
 } from "./types";
 
 export class AuthService {
@@ -142,7 +142,6 @@ export class AuthService {
     try {
       const decoded = jwt.verify(token, this.JWT_SECRET) as JWTPayload;
 
-      // Session kontrolü
       const session = await prisma.session.findUnique({
         where: { id: decoded.sessionId },
       });

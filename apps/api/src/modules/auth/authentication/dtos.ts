@@ -166,26 +166,3 @@ export type ChangePasswordDto = z.infer<typeof changePasswordSchema>;
 export type UpdateProfileDto = z.infer<typeof updateProfileSchema>;
 export type RevokeSessionDto = z.infer<typeof revokeSessionSchema>;
 export type RevokeAllSessionsDto = z.infer<typeof revokeAllSessionsSchema>;
-
-// Validation helper function - DÜZELTME
-export const validateSchema = <T>(schema: z.ZodSchema<T>, data: unknown): T => {
-  try {
-    return schema.parse(data);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      const errorMessages = error.issues.map(
-        (err) => `${err.path.join(".")}: ${err.message}`
-      );
-      throw new Error(`Validation failed: ${errorMessages.join(", ")}`);
-    }
-    throw error;
-  }
-};
-
-// Safe validation (returns result object instead of throwing)
-export const safeValidateSchema = <T>(
-  schema: z.ZodSchema<T>,
-  data: unknown
-) => {
-  return schema.safeParse(data);
-};

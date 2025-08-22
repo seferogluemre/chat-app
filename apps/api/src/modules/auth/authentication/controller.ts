@@ -1,21 +1,19 @@
-import { NextFunction, Request, Response } from 'express';
-import { BadRequestError } from '../../../utils/http-errors';
-import { AuthenticatedRequest } from '../permissions/middleware';
-import { changePasswordSchema, loginSchema, registerSchema, updateProfileSchema, validateSchema } from './dtos';
-import { authService } from './service';
+import { sendErrorResponse, sendSuccessResponse } from "@/middlewares/validation.middleware";
+import { NextFunction, Request, Response } from "express";
+import { BadRequestError } from "../../../utils/http-errors";
+import { AuthenticatedRequest } from "../permissions/middleware";
+import { authService } from "./service";
 
 export class AuthController {
-  async register(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async register(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
-      const validatedData = validateSchema(registerSchema, req.body);
-      
-      const result = await authService.register(validatedData);
-      
-      res.status(201).json({
-        success: true,
-        message: 'Kayıt başarılı',
-        data: result
-      });
+      const result = await authService.register(req.body);
+
+      sendSuccessResponse(res, result, "Kayıt başarılı", 201);
     } catch (error) {
       next(error);
     }
@@ -23,148 +21,152 @@ export class AuthController {
 
   async login(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const validatedData = validateSchema(loginSchema, req.body);
-      
       const ipAddress = req.ip || req.connection.remoteAddress;
-      const userAgent = req.get('User-Agent');
-      
-      const result = await authService.login(validatedData, ipAddress, userAgent);
-      
-      res.json({
-        success: true,
-        message: 'Giriş başarılı',
-        data: result
-      });
+      const userAgent = req.get("User-Agent");
+
+      const result = await authService.login(
+        req.body,
+        ipAddress,
+        userAgent
+      );
+
+      sendSuccessResponse(res, result, "Giriş başarılı");
     } catch (error) {
       next(error);
     }
   }
 
-  async logout(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  async logout(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
-      const sessionId = req.body.sessionId || req.headers['x-session-id'];
-      
+      const sessionId = req.body.sessionId || req.headers["x-session-id"];
+
       if (!sessionId) {
-        throw new BadRequestError('Session ID gerekli');
+        sendErrorResponse(res, "Session ID gerekli");
       }
-      
+
       await authService.logout(sessionId);
-      
-      res.json({
-        success: true,
-        message: 'Çıkış başarılı'
-      });
+
+      sendSuccessResponse(res, "Çıkış başarılı");
     } catch (error) {
       next(error);
     }
   }
 
-  async getProfile(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  async getProfile(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const user = await authService.getUserProfile(req.user.id);
 
-      res.json({
-        success: true,
-        data: user
-      });
+      sendSuccessResponse(res, user);
     } catch (error) {
       next(error);
     }
   }
 
-  async updateProfile(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  async updateProfile(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
-      const validatedData = validateSchema(updateProfileSchema, req.body);
-      
-      const updatedUser = await authService.updateUserProfile(req.user.id, validatedData);
-      
-      res.json({
-        success: true,
-        message: 'Profil güncellendi',
-        data: updatedUser
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async changePassword(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
-    try {
-      const validatedData = validateSchema(changePasswordSchema, req.body);
-      
-      await authService.changePassword(
-        req.user.id, 
-        validatedData.currentPassword, 
-        validatedData.newPassword
+      const updatedUser = await authService.updateUserProfile(
+        req.user.id,
+        req.body
       );
-      
-      res.json({
-        success: true,
-        message: 'Şifre başarıyla değiştirildi'
-      });
+
+      sendSuccessResponse(res, updatedUser, "Profil güncellendi");
     } catch (error) {
       next(error);
     }
   }
 
-  async getSessions(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  async changePassword(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+
+      await authService.changePassword(
+        req.user.id,
+        req.body.currentPassword,
+        req.body.newPassword
+      );
+
+      sendSuccessResponse(res, "Şifre başarıyla değiştirildi");
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getSessions(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const sessions = await authService.getUserSessions(req.user.id);
-      
-      res.json({
-        success: true,
-        data: sessions
-      });
+
+      sendSuccessResponse(res, sessions);
     } catch (error) {
       next(error);
     }
   }
 
-  async revokeSession(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  async revokeSession(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const { sessionId } = req.params;
-      
+
       await authService.revokeSession(req.user.id, sessionId);
-      
-      res.json({
-        success: true,
-        message: 'Session sonlandırıldı'
-      });
+
+      sendSuccessResponse(res, "Session sonlandırıldı");
     } catch (error) {
       next(error);
     }
   }
 
-  async revokeAllSessions(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  async revokeAllSessions(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const currentSessionId = req.body.currentSessionId;
-      
+
       await authService.revokeAllSessions(req.user.id, currentSessionId);
-      
-      res.json({
-        success: true,
-        message: 'Tüm cihazlardan çıkış yapıldı'
-      });
+
+      sendSuccessResponse(res, "Tüm cihazlardan çıkış yapıldı");
     } catch (error) {
       next(error);
     }
   }
 
-  async verifyToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+  async verifyToken(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {  
     try {
       const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        throw new BadRequestError('Token gerekli');
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        throw new BadRequestError("Token gerekli");
       }
 
       const token = authHeader.substring(7);
       const payload = await authService.verifyToken(token);
-      
-      res.json({
-        success: true,
-        message: 'Token geçerli',
-        data: { valid: true, payload }
-      });
+
+      sendSuccessResponse(res, { valid: true, payload }, "Token geçerli");
     } catch (error) {
       next(error);
     }
