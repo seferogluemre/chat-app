@@ -1,14 +1,14 @@
 import { Router } from "express";
 import {
-    validateBody,
-    validateParams,
+  validateBody,
+  validateParams,
 } from "../../middlewares/validation.middleware";
 import { authenticate } from "../auth/permissions/middleware";
 import { membershipController } from "./controller";
 import {
-    inviteMembersSchema,
-    kickMemberSchema,
-    memberParamsSchema,
+  inviteMembersSchema,
+  kickMemberSchema,
+  memberParamsSchema,
 } from "./dtos";
 
 const router = Router();

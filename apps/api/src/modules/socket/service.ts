@@ -11,7 +11,7 @@ export class SocketService {
   constructor(httpServer: HttpServer) {
     this.io = new Server(httpServer, {
       cors: {
-        origin: process.env.FRONTEND_URL || "http://localhost:3000",
+        origin: process.env.API_URL || "http://localhost:3000",
         methods: ["GET", "POST"],
       },
     });
@@ -21,7 +21,6 @@ export class SocketService {
   }
 
   private setupMiddleware() {
-    // Socket authentication
     this.io.use(async (socket, next) => {
       try {
         const token = socket.handshake.auth.token;
@@ -49,11 +48,9 @@ export class SocketService {
     this.io.on("connection", (socket) => {
       const userId = socket.data.userId;
 
-      // User online status
       this.userSockets.set(userId, socket.id);
       this.setUserOnline(userId, true);
 
-      // Join user rooms
       this.joinUserRooms(socket, userId);
 
       socket.on("join_room", (roomId) => this.handleJoinRoom(socket, roomId));
@@ -62,7 +59,6 @@ export class SocketService {
       socket.on("typing_stop", (data) => this.handleTypingStop(socket, data));
       socket.on("message_sent", (data) => this.handleMessageSent(socket, data));
 
-      // Disconnect
       socket.on("disconnect", () => {
         this.userSockets.delete(userId);
         this.setUserOnline(userId, false);
@@ -82,14 +78,17 @@ export class SocketService {
   }
 
   private handleJoinRoom(socket: any, roomId: string) {
+    console.log("join_room: kullanıcı odaya girdi", roomId);
     socket.join(roomId);
   }
 
   private handleLeaveRoom(socket: any, roomId: string) {
+    console.log("leave_room: kullanıcı odadan ayrıldı", roomId);
     socket.leave(roomId);
   }
 
   private handleTypingStart(socket: any, data: { roomId: string }) {
+    console.log("typing_start: kullanıcı yazıyor", data);
     socket.to(data.roomId).emit("user_typing", {
       userId: socket.data.userId,
       username: socket.data.user.username,
@@ -98,6 +97,7 @@ export class SocketService {
   }
 
   private handleTypingStop(socket: any, data: { roomId: string }) {
+    console.log("typing_stop: kullanıcı yazmayı bıraktı", data);
     socket.to(data.roomId).emit("user_stop_typing", {
       userId: socket.data.userId,
       roomId: data.roomId,
@@ -105,16 +105,22 @@ export class SocketService {
   }
 
   private handleMessageSent(socket: any, message: any) {
-    // Broadcast new message to room members
+    console.log("message_sent: mesaj gönderildi", message);
     socket.to(message.roomId).emit("new_message", message);
   }
 
-  // Public methods for emitting events
   public emitToRoom(roomId: string, event: string, data: any) {
+    console.log("emitToRoom: odaya mesaj gönderildi", roomId, event, data);
     this.io.to(roomId).emit(event, data);
   }
 
   public emitToUser(userId: string, event: string, data: any) {
+    console.log(
+      "emitToUser: kullanıcıya mesaj gönderildi",
+      userId,
+      event,
+      data
+    );
     const socketId = this.userSockets.get(userId);
     if (socketId) {
       this.io.to(socketId).emit(event, data);
@@ -128,16 +134,24 @@ export class SocketService {
         `user:${userId}:last_seen`,
         new Date().toISOString()
       );
+      console.log("setUserOnline: kullanıcı online", userId);
+      console.log("userSockets: kullanıcılar", this.userSockets);
     } else {
       await cache.removeFromSet("online_users", userId);
       await cache.setValue(
         `user:${userId}:last_seen`,
         new Date().toISOString()
       );
+      console.log("setUserOnline: kullanıcı offline", userId);
+      console.log("userSockets: kullanıcılar", this.userSockets);
     }
   }
 
   public async getOnlineUsers(): Promise<string[]> {
+    console.log(
+      "getOnlineUsers: çevrimiçi kullanıcılar",
+      await cache.getSetMembers("online_users")
+    );
     return await cache.getSetMembers("online_users");
   }
 }
