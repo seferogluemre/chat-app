@@ -24,7 +24,6 @@ export const PERMISSIONS = {
     ARCHIVE: { key: 'rooms:archive', description: 'Oda Arşivle' },
   },
   
-  // Room Member Management - Oda üyesi yönetimi
   ROOM_MEMBERS: {
     INVITE: { key: 'room-members:invite', description: 'Üye Davet Et' },
     KICK: { key: 'room-members:kick', description: 'Üye At' },
@@ -32,7 +31,6 @@ export const PERMISSIONS = {
     MANAGE_ROLES: { key: 'room-members:manage-roles', description: 'Üye Rollerini Yönet' },
   },
   
-  // Message Management - Mesaj yönetimi
   MESSAGES: {
     SEND: { key: 'messages:send', description: 'Mesaj Gönder' },
     EDIT_OWN: { key: 'messages:edit-own', description: 'Kendi Mesajını Düzenle' },

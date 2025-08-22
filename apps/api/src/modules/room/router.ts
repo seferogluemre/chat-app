@@ -56,7 +56,6 @@ router.put(
   validateParams(roomParamsSchema),
   validateBody(updateRoomSchema),
   requireRoomMembership(),
-  requirePermission('rooms:update', { requireRoomAccess: true }),
   roomController.updateRoom.bind(roomController)
 );
 
@@ -64,7 +63,6 @@ router.delete(
   '/:roomId',
   validateParams(roomParamsSchema),
   requireRoomMembership(),
-  requirePermission('rooms:delete', { requireRoomAccess: true }),
   roomController.deleteRoom.bind(roomController)
 );
 
@@ -73,7 +71,6 @@ router.post(
   validateParams(roomParamsSchema),
   validateBody(archiveRoomSchema),
   requireRoomMembership(),
-  requirePermission('rooms:archive', { requireRoomAccess: true }),
   roomController.toggleArchiveRoom.bind(roomController)
 );
 

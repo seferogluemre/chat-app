@@ -1,13 +1,11 @@
 import { z } from "zod";
 
-// Room creation DTO
 export const createRoomSchema = z.object({
   name: z
     .string()
     .min(2, "Oda adı en az 2 karakter olmalıdır")
     .max(100, "Oda adı en fazla 100 karakter olabilir")
-    .trim()
-    .optional(),
+    .trim(),
 
   description: z
     .string()
@@ -36,47 +34,51 @@ export const createRoomSchema = z.object({
     .optional(),
 });
 
-// Room update DTO
 export const updateRoomSchema = z.object({
   name: z
     .string()
-    .min(2, "Oda adı en az 2 karakter olmalıdır")
-    .max(100, "Oda adı en fazla 100 karakter olabilir")
+    .min(2, 'Oda adı en az 2 karakter olmalıdır')
+    .max(100, 'Oda adı en fazla 100 karakter olabilir')
     .trim()
     .optional(),
-
+  
   description: z
     .string()
-    .max(500, "Açıklama en fazla 500 karakter olabilir")
+    .max(500, 'Açıklama en fazla 500 karakter olabilir')
     .trim()
     .optional()
-    .or(z.literal("")),
-
-  isPrivate: z.boolean().optional(),
-
+    .or(z.literal('')),
+  
+  isPrivate: z
+    .boolean()
+    .optional(),
+  
   maxMembers: z
     .number()
-    .int("Üye sayısı tam sayı olmalıdır")
-    .min(2, "En az 2 üye olmalıdır")
-    .max(1000, "En fazla 1000 üye olabilir")
+    .int('Üye sayısı tam sayı olmalıdır')
+    .min(2, 'En az 2 üye olmalıdır')
+    .max(1000, 'En fazla 1000 üye olabilir')
     .optional()
     .nullable(),
-
+  
   roomImage: z
     .string()
-    .url("Geçerli bir URL giriniz")
+    .url('Geçerli bir URL giriniz')
     .optional()
-    .or(z.literal("")),
+    .or(z.literal('')),
+
+  memberIds: z
+    .array(z.string().uuid('Geçerli kullanıcı ID giriniz'))
+    .max(50, 'En fazla 50 üye davet edilebilir')
+    .optional()
 });
 
-// DM room creation DTO
 export const createDMSchema = z.object({
   participantId: z
     .string({ message: "Katılımcı ID gereklidir" })
     .uuid("Geçerli kullanıcı ID giriniz"),
 });
 
-// Room search DTO
 export const roomSearchSchema = z.object({
   query: z
     .string()
@@ -128,14 +130,12 @@ export const roomSearchSchema = z.object({
     .default(20),
 });
 
-// Room params DTO
 export const roomParamsSchema = z.object({
   roomId: z
     .string({ message: "Oda ID gereklidir" })
     .uuid("Geçerli oda ID giriniz"),
 });
 
-// Member invitation DTO
 export const inviteMembersSchema = z.object({
   memberIds: z
     .array(z.string().uuid("Geçerli kullanıcı ID giriniz"))
@@ -143,19 +143,16 @@ export const inviteMembersSchema = z.object({
     .max(50, "En fazla 50 kullanıcı davet edilebilir"),
 });
 
-// Member removal DTO
 export const removeMemberSchema = z.object({
   memberId: z
     .string({ message: "Üye ID gereklidir" })
     .uuid("Geçerli kullanıcı ID giriniz"),
 });
 
-// Room archive DTO
 export const archiveRoomSchema = z.object({
   archived: z.boolean().default(true),
 });
 
-// TypeScript types from schemas
 export type CreateRoomDto = z.infer<typeof createRoomSchema>;
 export type UpdateRoomDto = z.infer<typeof updateRoomSchema>;
 export type CreateDMDto = z.infer<typeof createDMSchema>;

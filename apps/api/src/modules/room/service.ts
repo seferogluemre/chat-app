@@ -1,5 +1,9 @@
-import prisma from '@/core/prisma';
-import { BadRequestError, ForbiddenError, NotFoundError } from '@/utils/http-errors';
+import prisma from "@/core/prisma";
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+} from "@/utils/http-errors";
 import {
   CreateDMPayload,
   CreateRoomPayload,
@@ -8,8 +12,8 @@ import {
   RoomMember,
   RoomSearchFilters,
   RoomWithDetails,
-  UpdateRoomPayload
-} from './types';
+  UpdateRoomPayload,
+} from "./types";
 
 export class RoomService {
   async getUserRooms(userId: string): Promise<RoomListItem[]> {
@@ -18,42 +22,42 @@ export class RoomService {
         memberships: {
           some: {
             userId,
-            isActive: true
-          }
+            isActive: true,
+          },
         },
-        deletedAt: null
+        deletedAt: null,
       },
       include: {
         _count: {
           select: {
             memberships: {
-              where: { isActive: true }
+              where: { isActive: true },
             },
-            messages: true
-          }
+            messages: true,
+          },
         },
         messages: {
           take: 1,
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           select: {
             content: true,
             createdAt: true,
             sender: {
               select: {
                 firstName: true,
-                lastName: true
-              }
-            }
-          }
-        }
+                lastName: true,
+              },
+            },
+          },
+        },
       },
       orderBy: [
-        { messages: { _count: 'desc' } }, // Son mesaj olan odalar önce
-        { createdAt: 'desc' }
-      ]
+        { messages: { _count: "desc" } }, // Son mesaj olan odalar önce
+        { createdAt: "desc" },
+      ],
     });
 
-    return rooms.map(room => ({
+    return rooms.map((room) => ({
       id: room.id,
       name: room.name,
       description: room.description,
@@ -64,16 +68,24 @@ export class RoomService {
       maxMembers: room.maxMembers,
       memberCount: room._count.memberships,
       lastMessageAt: room.messages[0]?.createdAt,
-      lastMessage: room.messages[0] ? {
-        content: room.messages[0].content,
-        senderName: `${room.messages[0].sender.firstName} ${room.messages[0].sender.lastName}`
-      } : undefined,
-      createdAt: room.createdAt
+      lastMessage: room.messages[0]
+        ? {
+            content: room.messages[0].content,
+            senderName: `${room.messages[0].sender.firstName} ${room.messages[0].sender.lastName}`,
+          }
+        : undefined,
+      createdAt: room.createdAt,
     }));
   }
 
   async getPublicRooms(filters: RoomSearchFilters): Promise<PaginatedRooms> {
-    const { page = 1, limit = 20, query, sortBy = 'createdAt', sortOrder = 'desc' } = filters;
+    const {
+      page = 1,
+      limit = 20,
+      query,
+      sortBy = "createdAt",
+      sortOrder = "desc",
+    } = filters;
     const skip = (page - 1) * limit;
 
     const where = {
@@ -83,10 +95,10 @@ export class RoomService {
       deletedAt: null,
       ...(query && {
         OR: [
-          { name: { contains: query, mode: 'insensitive' as const } },
-          { description: { contains: query, mode: 'insensitive' as const } }
-        ]
-      })
+          { name: { contains: query, mode: "insensitive" as const } },
+          { description: { contains: query, mode: "insensitive" as const } },
+        ],
+      }),
     };
 
     const [rooms, total] = await Promise.all([
@@ -96,18 +108,18 @@ export class RoomService {
           _count: {
             select: {
               memberships: { where: { isActive: true } },
-              messages: true
-            }
-          }
+              messages: true,
+            },
+          },
         },
         orderBy: this.buildOrderBy(sortBy, sortOrder),
         skip,
-        take: limit
+        take: limit,
       }),
-      prisma.room.count({ where })
+      prisma.room.count({ where }),
     ]);
 
-    const roomList: RoomListItem[] = rooms.map(room => ({
+    const roomList: RoomListItem[] = rooms.map((room) => ({
       id: room.id,
       name: room.name,
       description: room.description,
@@ -117,7 +129,7 @@ export class RoomService {
       roomImage: room.roomImage,
       maxMembers: room.maxMembers,
       memberCount: room._count.memberships,
-      createdAt: room.createdAt
+      createdAt: room.createdAt,
     }));
 
     return {
@@ -128,14 +140,11 @@ export class RoomService {
         total,
         totalPages: Math.ceil(total / limit),
         hasNext: page < Math.ceil(total / limit),
-        hasPrev: page > 1
-      }
+        hasPrev: page > 1,
+      },
     };
   }
 
-  /**
-   * Oda detayı getir
-   */
   async getRoomById(roomId: string, userId: string): Promise<RoomWithDetails> {
     const room = await prisma.room.findUnique({
       where: { id: roomId, deletedAt: null },
@@ -146,8 +155,8 @@ export class RoomService {
             username: true,
             firstName: true,
             lastName: true,
-            profileImage: true
-          }
+            profileImage: true,
+          },
         },
         memberships: {
           where: { isActive: true },
@@ -158,49 +167,56 @@ export class RoomService {
                 username: true,
                 firstName: true,
                 lastName: true,
-                profileImage: true
-              }
-            }
-          }
+                profileImage: true,
+              },
+            },
+          },
         },
         _count: {
           select: {
             memberships: { where: { isActive: true } },
-            messages: true
-          }
-        }
-      }
+            messages: true,
+          },
+        },
+      },
     });
 
     if (!room) {
-      throw new NotFoundError('Oda bulunamadı');
+      throw new NotFoundError("Oda bulunamadı");
     }
 
     // Kullanıcının bu odaya erişimi var mı kontrol et
     const membership = await prisma.membership.findUnique({
       where: {
-        userId_roomId: { userId, roomId }
-      }
+        userId_roomId: { userId, roomId },
+      },
     });
 
     if (!membership || !membership.isActive) {
       if (room.isPrivate) {
-        throw new ForbiddenError('Bu odaya erişim yetkiniz yok');
+        throw new ForbiddenError("Bu odaya erişim yetkiniz yok");
       }
     }
 
     return room as RoomWithDetails;
   }
 
-  /**
-   * Yeni oda oluştur
-   */
-  async createRoom(userId: string, payload: CreateRoomPayload): Promise<RoomWithDetails> {
-    const { name, description, isPrivate, maxMembers, roomImage, memberIds = [] } = payload;
+  async createRoom(
+    userId: string,
+    payload: CreateRoomPayload
+  ): Promise<RoomWithDetails> {
+    const {
+      name,
+      description,
+      isPrivate,
+      maxMembers,
+      roomImage,
+      memberIds = [],
+    } = payload;
 
     // DM değil ama isim yoksa hata
     if (!name && !isPrivate) {
-      throw new BadRequestError('Public odalar için isim gereklidir');
+      throw new BadRequestError("Public odalar için isim gereklidir");
     }
 
     const room = await prisma.$transaction(async (tx) => {
@@ -213,8 +229,8 @@ export class RoomService {
           maxMembers,
           roomImage,
           isDM: false,
-          createdById: userId
-        }
+          createdById: userId,
+        },
       });
 
       // Oluşturan kişiyi üye yap
@@ -222,24 +238,24 @@ export class RoomService {
         data: {
           userId,
           roomId: newRoom.id,
-          isActive: true
-        }
+          isActive: true,
+        },
       });
 
       // Diğer üyeleri ekle (varsa)
       if (memberIds.length > 0) {
         const memberships = memberIds
-          .filter((id: string) => id !== userId) 
+          .filter((id: string) => id !== userId)
           .map((memberId: string) => ({
             userId: memberId,
             roomId: newRoom.id,
-            isActive: true
+            isActive: true,
           }));
 
         if (memberships.length > 0) {
           await tx.membership.createMany({
             data: memberships,
-            skipDuplicates: true
+            skipDuplicates: true,
           });
         }
       }
@@ -251,14 +267,14 @@ export class RoomService {
     return await this.getRoomById(room.id, userId);
   }
 
-  /**
-   * DM odası oluştur
-   */
-  async createDMRoom(userId: string, payload: CreateDMPayload): Promise<RoomWithDetails> {
+  async createDMRoom(
+    userId: string,
+    payload: CreateDMPayload
+  ): Promise<RoomWithDetails> {
     const { participantId } = payload;
 
     if (userId === participantId) {
-      throw new BadRequestError('Kendinizle DM oluşturamazsınız');
+      throw new BadRequestError("Kendinizle DM oluşturamazsınız");
     }
 
     // Var olan DM kontrolü
@@ -269,13 +285,13 @@ export class RoomService {
         memberships: {
           every: {
             userId: { in: [userId, participantId] },
-            isActive: true
-          }
+            isActive: true,
+          },
         },
         _count: {
-          memberships: { equals: 2 }
-        }
-      }
+          memberships: { equals: 2 },
+        },
+      },
     });
 
     if (existingDM) {
@@ -289,16 +305,16 @@ export class RoomService {
           name: null,
           isDM: true,
           isPrivate: true,
-          createdById: userId
-        }
+          createdById: userId,
+        },
       });
 
       // Her iki kullanıcıyı da üye yap
       await tx.membership.createMany({
         data: [
           { userId, roomId: newRoom.id, isActive: true },
-          { userId: participantId, roomId: newRoom.id, isActive: true }
-        ]
+          { userId: participantId, roomId: newRoom.id, isActive: true },
+        ],
       });
 
       return newRoom;
@@ -307,51 +323,87 @@ export class RoomService {
     return await this.getRoomById(dmRoom.id, userId);
   }
 
-  /**
-   * Oda güncelle
-   */
-  async updateRoom(roomId: string, userId: string, payload: UpdateRoomPayload): Promise<RoomWithDetails> {
+  async updateRoom(
+    roomId: string,
+    userId: string,
+    payload: UpdateRoomPayload & { memberIds?: string[] }
+  ): Promise<RoomWithDetails> {
     const room = await prisma.room.findUnique({
-      where: { id: roomId, deletedAt: null }
+      where: { id: roomId, deletedAt: null },
     });
 
     if (!room) {
-      throw new NotFoundError('Oda bulunamadı');
+      throw new NotFoundError("Oda bulunamadı");
     }
 
     if (room.createdById !== userId) {
-      throw new ForbiddenError('Bu odayı sadece oluşturan kişi düzenleyebilir');
+      throw new ForbiddenError("Bu odayı sadece oluşturan kişi düzenleyebilir");
     }
 
     if (room.isDM) {
-      throw new BadRequestError('DM odaları düzenlenemez');
+      throw new BadRequestError("DM odaları düzenlenemez");
     }
 
-    const updatedRoom = await prisma.room.update({
-      where: { id: roomId },
-      data: {
-        ...payload,
-        updatedAt: new Date()
+    const { memberIds, ...updateData } = payload;
+
+    const updatedRoom = await prisma.$transaction(async (tx) => {
+      // Room bilgilerini güncelle
+      const updated = await tx.room.update({
+        where: { id: roomId },
+        data: {
+          ...updateData,
+          updatedAt: new Date(),
+        },
+      });
+
+      // Yeni üyeler ekle (eğer memberIds varsa)
+      if (memberIds && memberIds.length > 0) {
+        // Mevcut üyeleri kontrol et
+        const existingMemberships = await tx.membership.findMany({
+          where: {
+            roomId,
+            userId: { in: memberIds },
+          },
+          select: { userId: true },
+        });
+
+        const existingUserIds = existingMemberships.map((m) => m.userId);
+        const newMemberIds = memberIds.filter(
+          (id) => !existingUserIds.includes(id)
+        );
+
+        // Yeni üyeleri ekle
+        if (newMemberIds.length > 0) {
+          const memberships = newMemberIds.map((memberId) => ({
+            userId: memberId,
+            roomId,
+            isActive: true,
+          }));
+
+          await tx.membership.createMany({
+            data: memberships,
+            skipDuplicates: true,
+          });
+        }
       }
+
+      return updated;
     });
 
     return await this.getRoomById(updatedRoom.id, userId);
   }
 
-  /**
-   * Oda sil
-   */
   async deleteRoom(roomId: string, userId: string): Promise<void> {
     const room = await prisma.room.findUnique({
-      where: { id: roomId, deletedAt: null }
+      where: { id: roomId, deletedAt: null },
     });
 
     if (!room) {
-      throw new NotFoundError('Oda bulunamadı');
+      throw new NotFoundError("Oda bulunamadı");
     }
 
     if (room.createdById !== userId) {
-      throw new ForbiddenError('Bu odayı sadece oluşturan kişi silebilir');
+      throw new ForbiddenError("Bu odayı sadece oluşturan kişi silebilir");
     }
 
     // Soft delete
@@ -359,46 +411,44 @@ export class RoomService {
       where: { id: roomId },
       data: {
         deletedAt: new Date(),
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     });
   }
 
-  /**
-   * Oda arşivle/arşivden çıkar
-   */
-  async toggleArchiveRoom(roomId: string, userId: string, archived: boolean): Promise<RoomWithDetails> {
+  async toggleArchiveRoom(
+    roomId: string,
+    userId: string,
+    archived: boolean
+  ): Promise<RoomWithDetails> {
     const room = await prisma.room.findUnique({
-      where: { id: roomId, deletedAt: null }
+      where: { id: roomId, deletedAt: null },
     });
 
     if (!room) {
-      throw new NotFoundError('Oda bulunamadı');
+      throw new NotFoundError("Oda bulunamadı");
     }
 
     if (room.createdById !== userId) {
-      throw new ForbiddenError('Bu odayı sadece oluşturan kişi arşivleyebilir');
+      throw new ForbiddenError("Bu odayı sadece oluşturan kişi arşivleyebilir");
     }
 
     const updatedRoom = await prisma.room.update({
       where: { id: roomId },
       data: {
         isArchived: archived,
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     });
 
     return await this.getRoomById(updatedRoom.id, userId);
   }
 
-  /**
-   * Oda üyelerini getir
-   */
   async getRoomMembers(roomId: string): Promise<RoomMember[]> {
     const members = await prisma.membership.findMany({
       where: {
         roomId,
-        isActive: true
+        isActive: true,
       },
       include: {
         user: {
@@ -407,36 +457,33 @@ export class RoomService {
             username: true,
             firstName: true,
             lastName: true,
-            profileImage: true
-          }
-        }
+            profileImage: true,
+          },
+        },
       },
-      orderBy: { joinedAt: 'asc' }
+      orderBy: { joinedAt: "asc" },
     });
 
-    return members.map(member => ({
+    return members.map((member) => ({
       id: member.userId,
       username: member.user.username,
       firstName: member.user.firstName,
-      lastName: member.user.lastName, 
+      lastName: member.user.lastName,
       profileImage: member.user.profileImage,
       joinedAt: member.joinedAt,
-      isActive: member.isActive
+      isActive: member.isActive,
     }));
   }
 
-  /**
-   * Order by helper
-   */
   private buildOrderBy(sortBy: string, sortOrder: string) {
-    const order = sortOrder === 'asc' ? 'asc' : 'desc';
-    
+    const order = sortOrder === "asc" ? "asc" : "desc";
+
     switch (sortBy) {
-      case 'name':
+      case "name":
         return { name: order };
-      case 'memberCount':
+      case "memberCount":
         return { memberships: { _count: order } };
-      case 'lastMessageAt':
+      case "lastMessageAt":
         return { messages: { _count: order } };
       default:
         return { createdAt: order };
