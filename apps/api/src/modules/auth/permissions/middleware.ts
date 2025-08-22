@@ -102,7 +102,6 @@ export const requirePermission = (
     try {
       let roomId: string | undefined;
 
-      // Room ID'yi al (eğer gerekiyorsa)
       if (options?.requireRoomAccess) {
         const paramName = options.roomIdParam || 'roomId';
         roomId = req.params[paramName] || req.body[paramName] || req.query[paramName] as string;
@@ -114,7 +113,6 @@ export const requirePermission = (
         req.roomId = roomId;
       }
 
-      // Permission kontrolü yap
       const hasPermission = await userHasPermission(req.user, permission, roomId);
       
       if (!hasPermission) {

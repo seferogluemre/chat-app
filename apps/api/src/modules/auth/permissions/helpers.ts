@@ -2,11 +2,11 @@ import cache from "@/core/cache";
 import prisma from "@/core/prisma";
 import { Role } from "@prisma/client";
 import {
-    PermissionCheckResult,
-    PermissionIdentifier,
-    PermissionKey,
-    RoomPermissionContext,
-    UserWithPermissions,
+  PermissionCheckResult,
+  PermissionIdentifier,
+  PermissionKey,
+  RoomPermissionContext,
+  UserWithPermissions,
 } from "./types";
 
 const ROLE_CACHE_KEY = (roleId: number) => `role:${roleId}`;
