@@ -38,10 +38,12 @@ router.post(
   authController.changePassword.bind(authController)
 );
 router.get("/sessions", authController.getSessions.bind(authController));
+
 router.delete(
   "/sessions/:sessionId",
   authController.revokeSession.bind(authController)
 );
+
 router.delete(
   "/sessions",
   authController.revokeAllSessions.bind(authController)
