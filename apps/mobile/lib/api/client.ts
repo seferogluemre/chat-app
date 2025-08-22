@@ -53,7 +53,7 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response: AxiosResponse<ApiResponse>) => {
         if (__DEV__) {
-          console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
+          console.log(`✅ API DATA: ${response.config.method?.toUpperCase()} ${response.config.url}`, response.data);
         }
         return response;
       },

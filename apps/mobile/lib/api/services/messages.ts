@@ -1,6 +1,6 @@
-import { ApiMessage, PaginatedResponse } from '../../types/api';
-import { ENDPOINTS } from '../../utils/constants';
-import { apiClient } from '../client';
+import { ApiMessage, PaginatedResponse } from "../../types/api";
+import { ENDPOINTS } from "../../utils/constants";
+import { apiClient } from "../client";
 
 export interface SendMessageRequest {
   roomId: string;
@@ -18,68 +18,106 @@ export interface MessageSearchParams {
   isPinned?: boolean;
   after?: string;
   before?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
   page?: number;
   limit?: number;
 }
 
 export class MessageService {
-  static async getRoomMessages(roomId: string, params?: MessageSearchParams): Promise<PaginatedResponse<ApiMessage>> {
+  static async getRoomMessages(
+    roomId: string,
+    params?: MessageSearchParams
+  ): Promise<PaginatedResponse<ApiMessage>> {
+    console.log(
+      "🚀 Fetching messages for room:",
+      roomId,
+      "with params:",
+      params
+    );
+
     const response = await apiClient.get<PaginatedResponse<ApiMessage>>(
       ENDPOINTS.MESSAGES.ROOM_MESSAGES(roomId),
       params
     );
-    
+
+    console.log("📨 Messages API raw response:", response);
+
     if (!response.success || !response.data) {
-      throw new Error(response.message || 'Mesajlar getirilemedi');
+      throw new Error(response.message || "Mesajlar getirilemedi");
     }
-    
+
+    // DÜZELTME: response.data'yı döndür (response değil)
+    console.log("✅ Messages API Response:", response.data);
     return response.data;
   }
 
   static async sendMessage(data: SendMessageRequest): Promise<ApiMessage> {
-    const response = await apiClient.post<ApiMessage>(ENDPOINTS.MESSAGES.SEND, data);
-    
+    const response = await apiClient.post<ApiMessage>(
+      ENDPOINTS.MESSAGES.SEND,
+      data
+    );
+
     if (!response.success || !response.data) {
-      throw new Error(response.message || 'Mesaj gönderilemedi');
+      throw new Error(response.message || "Mesaj gönderilemedi");
     }
-    
+
     return response.data;
   }
 
-  static async updateMessage(messageId: string, data: UpdateMessageRequest): Promise<ApiMessage> {
-    const response = await apiClient.put<ApiMessage>(ENDPOINTS.MESSAGES.UPDATE(messageId), data);
-    
+  static async updateMessage(
+    messageId: string,
+    data: UpdateMessageRequest
+  ): Promise<ApiMessage> {
+    const response = await apiClient.put<ApiMessage>(
+      ENDPOINTS.MESSAGES.UPDATE(messageId),
+      data
+    );
+
     if (!response.success || !response.data) {
-      throw new Error(response.message || 'Mesaj düzenlenemedi');
+      throw new Error(response.message || "Mesaj düzenlenemedi");
     }
-    
+
     return response.data;
   }
 
   static async deleteMessage(messageId: string): Promise<void> {
-    const response = await apiClient.delete(ENDPOINTS.MESSAGES.DELETE(messageId));
-    
+    const response = await apiClient.delete(
+      ENDPOINTS.MESSAGES.DELETE(messageId)
+    );
+
     if (!response.success) {
-      throw new Error(response.message || 'Mesaj silinemedi');
+      throw new Error(response.message || "Mesaj silinemedi");
     }
   }
 
-  static async togglePinMessage(messageId: string, pinned: boolean): Promise<ApiMessage> {
-    const response = await apiClient.post<ApiMessage>(ENDPOINTS.MESSAGES.PIN(messageId), { pinned });
-    
+  static async togglePinMessage(
+    messageId: string,
+    pinned: boolean
+  ): Promise<ApiMessage> {
+    const response = await apiClient.post<ApiMessage>(
+      ENDPOINTS.MESSAGES.PIN(messageId),
+      { pinned }
+    );
+
     if (!response.success || !response.data) {
-      throw new Error(response.message || 'Mesaj pin durumu değiştirilemedi');
+      throw new Error(response.message || "Mesaj pin durumu değiştirilemedi");
     }
-    
+
     return response.data;
   }
 
-  static async toggleReaction(messageId: string, emoji: string, action: 'add' | 'remove'): Promise<void> {
-    const response = await apiClient.post(`/messages/${messageId}/react`, { emoji, action });
-    
+  static async toggleReaction(
+    messageId: string,
+    emoji: string,
+    action: "add" | "remove"
+  ): Promise<void> {
+    const response = await apiClient.post(`/messages/${messageId}/react`, {
+      emoji,
+      action,
+    });
+
     if (!response.success) {
-      throw new Error(response.message || 'Reaction eklenemedi');
+      throw new Error(response.message || "Reaction eklenemedi");
     }
   }
 }
