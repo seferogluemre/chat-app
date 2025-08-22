@@ -8,7 +8,6 @@ import {
   UserWithPermissions
 } from './types';
 
-// Request'i extend et - user bilgisini ekle
 export interface AuthenticatedRequest extends Request {
   user: UserWithPermissions;
   roomId?: string;
@@ -21,21 +20,17 @@ export const authenticate = async (
 ): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
-    console.log('🔍 Auth Header:', authHeader); // DEBUG
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedError('Token gerekli');
     }
 
     const token = authHeader.substring(7); 
-    console.log('🔑 Token:', token.substring(0, 20) + '...');
-    console.log('🔐 JWT_SECRET exists:', !!process.env.JWT_SECRET); 
     
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { 
       userId: string; 
       sessionId: string; 
     };
-    console.log('✅ JWT Decoded:', decoded);
     
     const session = await prisma.session.findUnique({
       where: { 
@@ -44,7 +39,6 @@ export const authenticate = async (
         expiresAt: { gt: new Date() } 
       }
     });
-    console.log('📝 Session found:', !!session); 
 
     if (!session) {
       throw new UnauthorizedError('Session süresi dolmuş veya geçersiz');
@@ -70,7 +64,6 @@ export const authenticate = async (
         }
       }
     });
-    console.log('👤 User found:', !!user); 
 
     if (!user) {
       throw new UnauthorizedError('Kullanıcı bulunamadı');
@@ -81,11 +74,9 @@ export const authenticate = async (
     }
 
     req.user = user as UserWithPermissions;
-    console.log('✅ Authentication successful'); 
     next();
 
   } catch (error) {
-    console.error('❌ Auth Error:', error.message); 
     if (error instanceof jwt.JsonWebTokenError) {
       return next(new UnauthorizedError('Geçersiz token'));
     }
@@ -96,10 +87,6 @@ export const authenticate = async (
   }
 };
 
-/**
- * Permission Control Middleware Factory
- * Belirli bir permission'ı kontrol eden middleware oluşturur
- */
 export const requirePermission = (
   permission: PermissionIdentifier,
   options?: {

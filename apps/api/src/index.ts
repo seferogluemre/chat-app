@@ -24,7 +24,6 @@ const httpServer = createServer(app);
 
 const api = Router();
 
-app.use(errorMiddleware);
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -48,6 +47,8 @@ app.get("/health", (req, res) => {
 api.use("/auth", authRoutes);
 
 app.use("/api", api);
+
+app.use(errorMiddleware);
 
 httpServer.listen(port, () => {
   console.log(`Express Sunucusu ${port} portunda çalışıyor...`);
