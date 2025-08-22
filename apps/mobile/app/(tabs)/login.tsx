@@ -14,8 +14,8 @@ import {
 import { useAuth } from "../../context/auth-context";
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState("test@example.com");
-  const [password, setPassword] = useState("password123");
+  const [email, setEmail] = useState("yunus@example.com");
+  const [password, setPassword] = useState("Emre123.");
   const { login, isLoading } = useAuth();
   const router = useRouter();
 
@@ -25,12 +25,17 @@ export default function LoginScreen() {
       return;
     }
 
-    const success = await login(email, password);
-    if (success) {
-      router.replace("/(tabs)");
-    } else {
+    try {
+      const response = await login(email, password);
+      console.log("response", response);
+      if (response) {
+        router.replace("/(tabs)");
+      } else {
+        Alert.alert("Hata", "Giriş yapılamadı. Lütfen tekrar deneyin.");
+      }
+    } catch (error) {
       Alert.alert("Hata", "Giriş yapılamadı. Lütfen tekrar deneyin.");
-    }
+    } 
   };
 
   const navigateToRegister = () => {

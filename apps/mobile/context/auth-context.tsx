@@ -1,6 +1,8 @@
+import { AuthService } from "@/lib/api/services/auth";
 import { User } from "@/types/chat";
-import React, { ReactNode, createContext, useContext, useState } from "react";
-import { currentUser } from "../data/data";
+import React, { ReactNode, createContext, useContext, useEffect, useState } from "react";
+import { StorageService } from "../lib/storage/storage";
+import { ApiUser } from "../lib/types/api";
 
 interface AuthContextType {
   user: User | null;
@@ -10,10 +12,13 @@ interface AuthContextType {
     password: string,
     firstName: string,
     lastName: string,
-    username: string
+    username: string,
+    bio?: string
   ) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isLoading: boolean;
+  isAuthenticated: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,72 +27,200 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// API User'ı App User'a dönüştür
+const mapApiUserToAppUser = (apiUser: ApiUser): User => ({
+  id: apiUser.id,
+  email: apiUser.email,
+  firstName: apiUser.firstName,
+  lastName: apiUser.lastName,
+  username: apiUser.username,
+  profileImage: apiUser.profileImage,
+  bio: apiUser.bio,
+  isOnline: true, // Socket'tan gelecek
+});
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(currentUser);
-  const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Başlangıçta true (auto-login kontrolü için)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
+  // App başladığında auto-login kontrol et
+  useEffect(() => {
+    checkAutoLogin();
+  }, []);
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+  /**
+   * Auto-login kontrolü
+   */
+  const checkAutoLogin = async (): Promise<void> => {
+    try {
+      setIsLoading(true);
+      
+      // Stored token var mı?
+      const token = await StorageService.getToken();
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
 
-    if (email.trim() && password.trim()) {
-      setUser(currentUser);
+      // Token geçerli mi?
+      const isValidToken = await AuthService.verifyToken();
+      if (!isValidToken) {
+        // Geçersiz token'ı temizle
+        await StorageService.clearAll();
+        setIsLoading(false);
+        return;
+      }
+
+      // User bilgilerini getir
+      const userProfile = await AuthService.getProfile();
+      const appUser = mapApiUserToAppUser(userProfile);
+      
+      setUser(appUser);
+      setIsAuthenticated(true);
+      
+    } catch (error) {
+      console.error('Auto-login error:', error);
+      // Hata durumunda storage'ı temizle
+      await StorageService.clearAll();
+    } finally {
       setIsLoading(false);
-      return true;
     }
-
-    setIsLoading(false);
-    return false;
   };
 
+  /**
+   * Kullanıcı girişi
+   */
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      setIsLoading(true);
+
+      const response = await AuthService.login({ email, password });
+      
+      // Token'ı kaydet
+      await StorageService.setToken(response.token);
+      
+      // User'ı kaydet ve state'i güncelle
+      const appUser = mapApiUserToAppUser(response.user);
+      await StorageService.setUser(appUser);
+      
+      setUser(appUser);
+      setIsAuthenticated(true);
+      
+      return true;
+    } catch (error: any) {
+      console.error('Login error:', error);
+      
+      // Error message'ı kullanıcıya göster
+      const errorMessage = error.response?.data?.message || error.message || 'Giriş başarısız';
+      
+      // TODO: Toast message göster
+      console.log('Login Error:', errorMessage);
+      
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Kullanıcı kaydı
+   */
   const register = async (
     email: string,
     password: string,
     firstName: string,
     lastName: string,
-    username: string
+    username: string,
+    bio?: string
   ): Promise<boolean> => {
-    setIsLoading(true);
+    try {
+      setIsLoading(true);
 
-    // Şuanlık api call yapmıyoruz backend bitince baglıyacagız
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    if (
-      email.trim() &&
-      password.trim() &&
-      firstName.trim() &&
-      lastName.trim() &&
-      username.trim()
-    ) {
-      const newUser: User = {
-        id: `user-${Date.now()}`,
+      const response = await AuthService.register({
         email,
+        password,
         firstName,
         lastName,
         username,
-        profileImage:
-          "https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg?auto=compress&cs=tinysrgb&w=150",
-        bio: "New user",
-        isOnline: true,
-      };
-      setUser(newUser);
-      setIsLoading(false);
+        bio
+      });
+      
+      // Token'ı kaydet
+      await StorageService.setToken(response.token);
+      
+      // User'ı kaydet ve state'i güncelle
+      const appUser = mapApiUserToAppUser(response.user);
+      await StorageService.setUser(appUser);
+      
+      setUser(appUser);
+      setIsAuthenticated(true);
+      
       return true;
+    } catch (error: any) {
+      console.error('Register error:', error);
+      
+      // Error message'ı kullanıcıya göster
+      const errorMessage = error.response?.data?.message || error.message || 'Kayıt başarısız';
+      
+      // TODO: Toast message göster
+      console.log('Register Error:', errorMessage);
+      
+      return false;
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
-    return false;
   };
 
-  const logout = () => {
-    setUser(null);
+  /**
+   * Çıkış yapma
+   */
+  const logout = async (): Promise<void> => {
+    try {
+      setIsLoading(true);
+      
+      // Backend'e logout isteği gönder
+      await AuthService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Her durumda local storage'ı temizle
+      await StorageService.clearAll();
+      setUser(null);
+      setIsAuthenticated(false);
+      setIsLoading(false);
+    }
   };
 
-  console.log("user", user);
+  /**
+   * User bilgilerini yenile
+   */
+  const refreshUser = async (): Promise<void> => {
+    try {
+      if (!isAuthenticated) return;
+      
+      const userProfile = await AuthService.getProfile();
+      const appUser = mapApiUserToAppUser(userProfile);
+      
+      setUser(appUser);
+      await StorageService.setUser(appUser);
+    } catch (error) {
+      console.error('Refresh user error:', error);
+      // Token geçersizse logout yap
+      await logout();
+    }
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      login, 
+      register, 
+      logout, 
+      isLoading, 
+      isAuthenticated,
+      refreshUser 
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -19,7 +19,7 @@ class ApiClient {
 
   constructor() {
     this.client = axios.create({
-      baseURL: API_CONFIG.BASE_URL,
+      baseURL: API_CONFIG.BASE_URL ,
       timeout: API_CONFIG.TIMEOUT,
       headers: {
         'Content-Type': 'application/json',
@@ -36,7 +36,8 @@ class ApiClient {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
-        
+
+        console.log("config", config.headers);
         if (__DEV__) {
           console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
         }
@@ -58,6 +59,7 @@ class ApiClient {
       },
       async (error: AxiosError<ApiResponse>) => {
         if (__DEV__) {
+          console.log("error", error);
           console.log(`❌ API Error: ${error.config?.method?.toUpperCase()} ${error.config?.url}`, error.response?.data);
         }
 
