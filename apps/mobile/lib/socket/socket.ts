@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { StorageService } from '../storage/storage';
+import { SocketMessage, TypingData, UserStatusData } from '../types/api';
 import { API_CONFIG } from '../utils/constants';
 
 export interface SocketEvents {
@@ -10,12 +11,12 @@ export interface SocketEvents {
   user_online: (userId: string) => void;
   user_offline: (userId: string) => void;
 
-  new_message: (message: any) => void;
-  message_updated: (message: any) => void;
+  new_message: (message: SocketMessage) => void;
+  message_updated: (message: SocketMessage) => void;
   message_deleted: (messageId: string) => void;
-  message_pinned: (message: any) => void;
+  message_pinned: (message: SocketMessage) => void;
 
-  user_typing: (data: { userId: string; username: string; roomId: string }) => void;
+  user_typing: (data: TypingData) => void;
   user_stop_typing: (data: { userId: string; roomId: string }) => void;
 
   // Room events
@@ -115,7 +116,7 @@ export class SocketClient {
     this.emit('typing_stop', { roomId });
   }
 
-  messageeSent(message: any): void {
+  messageSent(message: any): void {
     this.emit('message_sent', message);
   }
 
@@ -124,6 +125,7 @@ export class SocketClient {
   }
 
   getSocket(): Socket | null {
+    return this.socket;
   }
 }
 

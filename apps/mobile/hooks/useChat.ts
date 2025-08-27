@@ -1,5 +1,6 @@
 import { useSocket } from "@/context/socket-context";
 import { ApiMessage, MessageService } from "@/lib/api";
+import { ErrorHandler, ToastService } from "@/lib/utils/toast";
 import { useCallback, useEffect, useState } from "react";
 
 export const useChat = (roomId: string) => {
@@ -73,12 +74,12 @@ export const useChat = (roomId: string) => {
       });
 
       console.log("✅ Messages loaded:", response);
-      console.log("📝 Messages array:", response.messages);
+      console.log("📝 Messages array:", response.data);
 
-      // DÜZELTME: response.messages (response.data.messages değil)
-      setMessages(response.messages || []);
+      setMessages(response.data || []);
     } catch (error) {
       console.error("❌ Load messages error:", error);
+      ErrorHandler.showError(error, 'Mesajlar yüklenemedi');
     } finally {
       setLoading(false);
     }
@@ -104,6 +105,7 @@ export const useChat = (roomId: string) => {
       return true;
     } catch (error) {
       console.error("❌ Send message error:", error);
+      ErrorHandler.showError(error, 'Mesaj gönderilemedi');
       return false;
     }
   };

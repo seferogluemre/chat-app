@@ -1,4 +1,5 @@
 import { AuthService } from "@/lib/api/services/auth";
+import { ErrorHandler, ToastService } from "@/lib/utils/toast";
 import { User } from "@/types/chat";
 import React, { ReactNode, createContext, useContext, useEffect, useState } from "react";
 import { StorageService } from "../lib/storage/storage";
@@ -107,15 +108,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(appUser);
       setIsAuthenticated(true);
       
+      ToastService.success('Giriş başarılı! Hoş geldiniz.');
+      
       return true;
     } catch (error: any) {
       console.error('Login error:', error);
       
       // Error message'ı kullanıcıya göster
-      const errorMessage = error.response?.data?.message || error.message || 'Giriş başarısız';
-      
-      // TODO: Toast message göster
-      console.log('Login Error:', errorMessage);
+      ErrorHandler.showError(error, 'Giriş başarısız');
       
       return false;
     } finally {
@@ -156,15 +156,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(appUser);
       setIsAuthenticated(true);
       
+      ToastService.success('Kayıt başarılı! Hoş geldiniz.');
+      
       return true;
     } catch (error: any) {
       console.error('Register error:', error);
       
       // Error message'ı kullanıcıya göster
-      const errorMessage = error.response?.data?.message || error.message || 'Kayıt başarısız';
-      
-      // TODO: Toast message göster
-      console.log('Register Error:', errorMessage);
+      ErrorHandler.showError(error, 'Kayıt başarısız');
       
       return false;
     } finally {

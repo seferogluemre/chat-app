@@ -87,3 +87,39 @@ export interface ApiError {
   }>;
   timestamp: string;
 }
+
+// Socket Event Types
+export interface SocketMessage {
+  id: string;
+  content: string;
+  senderId: string;
+  roomId: string;
+  createdAt: string;
+  sender: {
+    id: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    fullName: string;
+    profileImage?: string;
+  };
+}
+
+export interface TypingData {
+  userId: string;
+  username: string;
+  roomId: string;
+}
+
+export interface UserStatusData {
+  userId: string;
+  isOnline: boolean;
+  lastSeen?: string;
+}
+
+// Auth Verification Response
+export interface TokenVerificationResponse {
+  success: boolean;
+  valid: boolean;
+  user?: ApiUser;
+}

@@ -6,6 +6,7 @@ import React, {
     useState,
 } from "react";
 import { Socket } from "socket.io-client";
+import { ErrorHandler } from "../lib/utils/toast";
 import { socketClient } from "../lib/socket/socket";
 import { useAuth } from "./auth-context";
 
@@ -79,10 +80,12 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
       newSocket.on("connect_error", (error) => {
         console.error("❌ Socket connection error in context:", error);
+        ErrorHandler.showSocketError(error);
         setIsConnected(false);
       });
     } catch (error) {
       console.error("Socket connection failed:", error);
+      ErrorHandler.showSocketError(error);
       setIsConnected(false);
     }
   };

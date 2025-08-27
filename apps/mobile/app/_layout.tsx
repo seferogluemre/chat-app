@@ -1,10 +1,11 @@
+import { useAuth } from "@/context/auth-context";
 import { SocketProvider } from "@/context/socket-context";
 import { useFrameworkReady } from "@/hooks/useFrameworkReady";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { AuthProvider, useAuth } from "../context/auth-context";
+import Toast from 'react-native-toast-message';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -44,6 +45,7 @@ export default function RootLayout() {
       <SocketProvider>
         <RootNavigator />
         <StatusBar style="auto" />
+        <Toast />
       </SocketProvider>
     </AuthProvider>
   );

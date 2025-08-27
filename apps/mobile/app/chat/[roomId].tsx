@@ -1,4 +1,6 @@
+import { ChatSkeleton } from '@/components/ui/SkeletonLoader';
 import { useChat } from '@/hooks/useChat';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { RoomService } from '@/lib/api/services/rooms';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, MoreVertical, Send } from 'lucide-react-native';
@@ -23,6 +25,7 @@ export default function ChatScreen() {
   const { roomId } = useLocalSearchParams<{ roomId: string }>();
   const { user } = useAuth();
   const router = useRouter();
+  const { isConnected: isNetworkConnected } = useNetworkStatus();
   
   const { 
     messages, 
@@ -39,8 +42,7 @@ export default function ChatScreen() {
   const [isTyping, setIsTyping] = useState(false);
   const [showRoomInfo, setShowRoomInfo] = useState(false);
   const flatListRef = useRef<FlatList>(null);
-  
-  let typingTimeout: NodeJS.Timeout;
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     loadRoomDetails();
@@ -53,6 +55,17 @@ export default function ChatScreen() {
       }, 100);
     }
   }, [messages]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      if (isTyping) {
+        stopTyping();
+      }
+    };
+  }, [isTyping, stopTyping]);
 
   const loadRoomDetails = async () => {
     try {
@@ -90,8 +103,13 @@ export default function ChatScreen() {
       setIsTyping(true);
     }
 
-    clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(() => {
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Stop typing after 1 second of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
       if (isTyping) {
         stopTyping();
         setIsTyping(false);
@@ -160,10 +178,22 @@ export default function ChatScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Mesajlar yükleniyor...</Text>
+        {/* Header skeleton */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <ArrowLeft size={24} color="#007AFF" />
+          </TouchableOpacity>
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerTitle}>Chat</Text>
+            <Text style={styles.headerSubtitle}>Yükleniyor...</Text>
+          </View>
+          <TouchableOpacity style={styles.moreButton}>
+            <MoreVertical size={24} color="#007AFF" />
+          </TouchableOpacity>
         </View>
+        
+        {/* Chat skeleton */}
+        <ChatSkeleton />
       </SafeAreaView>
     );
   }
@@ -178,7 +208,7 @@ export default function ChatScreen() {
         <View style={styles.headerInfo}>
           <Text style={styles.headerTitle}>{getRoomDisplayName()}</Text>
           <Text style={styles.headerSubtitle}>
-            {isConnected ? 'Bağlı' : 'Bağlantı yok'} • {messages.length} mesaj
+            {isConnected && isNetworkConnected ? 'Bağlı' : 'Bağlantı yok'} • {messages.length} mesaj
           </Text>
         </View>
         
@@ -228,9 +258,9 @@ export default function ChatScreen() {
             onPress={handleSend}
             style={[
               styles.sendButton,
-              { opacity: inputText.trim() ? 1 : 0.5 }
+              { opacity: (inputText.trim() && isConnected && isNetworkConnected) ? 1 : 0.5 }
             ]}
-            disabled={!inputText.trim()}
+            disabled={!inputText.trim() || !isConnected || !isNetworkConnected}
           >
             <Send size={20} color="white" />
           </TouchableOpacity>
